@@ -9,6 +9,7 @@ from analyzer import extract_tasks, make_summary
 from exporter import make_docx
 from pdf_exporter import make_pdf
 from transcription import segments_to_text, transcribe_audio
+from quality import validate_protocol
 
 
 st.set_page_config(page_title="MeetingMind", page_icon="📝", layout="wide", initial_sidebar_state="expanded")
@@ -27,25 +28,48 @@ st.caption("🔒 Локальная обработка: аудио и текст
 with st.sidebar:
     st.subheader("Настройки")
     model_size = st.selectbox("Размер локальной модели", ["small", "medium"], index=0)
+    st.info("Перед обработкой убедитесь, что участники уведомлены о записи и ИИ-транскрибации.")
     st.divider()
     st.markdown("**Как это работает**")
     st.markdown("1. Загрузите запись\n2. Нажмите «Создать протокол»\n3. Проверьте поручения\n4. Скачайте DOCX")
 
 audio = st.file_uploader("Загрузите запись совещания", type=["mp3", "wav", "m4a", "mp4"], help="Поддерживаются MP3, WAV, M4A и MP4")
+consent = st.checkbox("Участники уведомлены о записи и локальной ИИ-транскрибации")
+speaker_mapping = st.text_area("Имена говорящих (по строке: SPEAKER_00=ФИО)", help="Имена используются для ответственных и протокола.")
+
+
+def parse_speaker_mapping(value: str) -> dict[str, str]:
+    mapping: dict[str, str] = {}
+    for line in value.splitlines():
+        if "=" in line:
+            key, name = line.split("=", 1)
+            if key.strip() and name.strip():
+                mapping[key.strip()] = name.strip()
+    return mapping
+
+
 if audio:
     st.audio(audio)
     st.info(f"Файл готов к обработке: **{audio.name}** · {audio.size / 1024 / 1024:.1f} МБ")
 
 if audio and st.button("Создать протокол", type="primary"):
+    if not consent:
+        st.error("Подтвердите, что участники уведомлены о записи.")
+        st.stop()
     with tempfile.NamedTemporaryFile(delete=False, suffix=Path(audio.name).suffix) as temp:
         temp.write(audio.getbuffer())
         audio_path = temp.name
-    with st.spinner("Распознаю аудио локально. Первый запуск скачает модель..."):
-        segments = transcribe_audio(audio_path, model_size)
-    transcript = segments_to_text(segments)
-    tasks = extract_tasks(transcript)
-    summary = make_summary(transcript, tasks)
-    st.session_state["result"] = {"transcript": transcript, "tasks": tasks, "summary": summary}
+    try:
+        with st.spinner("Распознаю аудио локально. Первый запуск скачает модель..."):
+            segments = transcribe_audio(audio_path, model_size)
+        transcript = segments_to_text(segments)
+        tasks = extract_tasks(transcript, parse_speaker_mapping(speaker_mapping))
+        summary = make_summary(transcript, tasks)
+        st.session_state["result"] = {"transcript": transcript, "tasks": tasks, "summary": summary}
+    except Exception as exc:
+        st.error(f"Не удалось обработать запись: {exc}")
+    finally:
+        Path(audio_path).unlink(missing_ok=True)
 
 result = st.session_state.get("result")
 if result:
@@ -56,7 +80,7 @@ if result:
     left, middle, right = st.columns(3)
     left.metric("Фрагментов речи", len([x for x in transcript.splitlines() if x.strip()]))
     middle.metric("Поручений найдено", len(tasks))
-    right.metric("Формат экспорта", "DOCX")
+    right.metric("Форматы экспорта", "DOCX · PDF · JSON")
     speakers = sorted(set(re.findall(r"\]\s*([^:]+):", transcript)))
     if len(speakers) <= 1:
         st.warning("Голоса пока не удалось надёжно разделить. Метки SPEAKER будут проверены вручную перед финальной отправкой.")
@@ -65,13 +89,13 @@ if result:
     with result_tab:
         st.markdown('<div class="section">', unsafe_allow_html=True)
         st.subheader("Саммари")
-        st.write(summary)
+        st.markdown(summary.replace("\n", "  \n"))
         st.markdown('</div>', unsafe_allow_html=True)
         st.markdown('<div class="section">', unsafe_allow_html=True)
         st.subheader("Поручения")
         if tasks:
             display_tasks = [dict(item, status="Не проверено") for item in tasks]
-            edited_tasks = st.data_editor(display_tasks, use_container_width=True, hide_index=True, disabled=["task", "responsible", "deadline"], column_config={
+            edited_tasks = st.data_editor(display_tasks, use_container_width=True, hide_index=True, column_config={
                 "task": st.column_config.TextColumn("Поручение", width="large"),
                 "responsible": st.column_config.TextColumn("Ответственный"),
                 "deadline": st.column_config.TextColumn("Срок"),
@@ -87,7 +111,7 @@ if result:
         st.caption("Можно исправить отдельные слова, после чего пересчитать поручения без повторной обработки аудио.")
         edited_transcript = st.text_area("Текст совещания", transcript, height=480, key="transcript_editor", label_visibility="collapsed")
         if st.button("🔄 Пересчитать поручения из исправленного текста"):
-            updated_tasks = extract_tasks(edited_transcript)
+            updated_tasks = extract_tasks(edited_transcript, parse_speaker_mapping(speaker_mapping))
             st.session_state["result"] = {
                 "transcript": edited_transcript,
                 "tasks": updated_tasks,
@@ -95,7 +119,17 @@ if result:
             }
             st.rerun()
 
-    structured = {"summary": summary, "tasks": edited_tasks, "transcript": transcript, "speakers": speakers}
+    quality = validate_protocol(transcript, edited_tasks, summary)
+    with result_tab:
+        st.subheader("Контроль качества")
+        st.metric("Оценка протокола", f"{quality['quality_score']}/100")
+        if quality["warnings"]:
+            for warning in quality["warnings"]:
+                st.warning(warning)
+        else:
+            st.success("Обязательные поля заполнены, результат готов к проверке и экспорту.")
+
+    structured = {"summary": summary, "tasks": edited_tasks, "transcript": transcript, "speakers": speakers, "quality": quality}
     with export_tab:
         st.subheader("Скачать результат")
         st.write("DOCX удобно отправить коллегам, JSON — передать в СЭД, CRM или будущий дашборд.")
