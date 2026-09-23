@@ -418,10 +418,10 @@ def transcribe_audio(
     options: dict[str, Any] = {
         "language": _language(language),
         "vad_filter": True,
-        "vad_parameters": {"min_silence_duration_ms": 450, "speech_pad_ms": 250},
+        "vad_parameters": {"min_silence_duration_ms": 750, "speech_pad_ms": 300},
         "beam_size": 5,
-        # Не переносим ошибочную фразу из одного turn в следующий.
-        "condition_on_previous_text": False,
+        # Сохраняем контекст: это важно для поручений, сроков и имён.
+        "condition_on_previous_text": True,
         "temperature": 0.0,
         "compression_ratio_threshold": 2.4,
         "log_prob_threshold": -1.0,
@@ -450,8 +450,12 @@ def transcribe_audio(
             for segment in segments:
                 segment.speaker = _speaker_from_annotation(segment, annotation) or "SPEAKER_00"
             diarization_used = True
-        else:
+        elif _voice_encoder() is not None:
+            # Кластеризация используется только вместе с voice encoder;
+            # без него она давала ложные смены говорящих и ухудшала протокол.
             diarization_used = _acoustic_speakers(path, segments)
+        else:
+            LOGGER.warning("SpeechBrain не загружен: отключена эвристическая диаризация")
     if not diarization_used:
         for segment in segments:
             segment.speaker = "SPEAKER_00"
