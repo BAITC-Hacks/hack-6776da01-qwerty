@@ -212,7 +212,7 @@ if result:
     with transcript_tab:
         st.subheader("Полный транскрипт с именами")
         edited_transcript = st.text_area("Текст совещания", transcript, height=480, label_visibility="collapsed")
-        if st.button("🔄 Пересчитать поручения из исправленного текста"):
+        if st.button("Пересчитать поручения из исправленного текста"):
             st.session_state["result"] = {"raw_transcript": edited_transcript, "ai_result": analyze_locally(edited_transcript) if smart_mode else None}
             st.rerun()
 
