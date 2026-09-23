@@ -95,17 +95,97 @@ def _speaker_from_annotation(segment: Segment, annotation: Any) -> str | None:
     return max(overlaps, key=lambda item: item[0])[1] if overlaps else None
 
 
-def _heuristic_speakers(segments: list[Segment], pause_seconds: float = 0.85) -> None:
-    """Fallback без сторонних моделей: смена очереди реплик по паузам."""
-    if not segments:
-        return
-    speaker_index = 0
-    segments[0].speaker = "SPEAKER_00"
-    for previous, current in zip(segments, segments[1:]):
-        pause = max(0.0, current.start - previous.end)
-        if pause >= pause_seconds:
-            speaker_index = (speaker_index + 1) % 2
-        current.speaker = f"SPEAKER_{speaker_index:02d}"
+def _audio_samples(audio_path: Path, sample_rate: int = 16000):
+    """Decode audio locally through PyAV; no ffmpeg process or cloud API."""
+    import av
+    import numpy as np
+
+    container = av.open(str(audio_path))
+    stream = container.streams.audio[0]
+    resampler = av.audio.resampler.AudioResampler(format="s16", layout="mono", rate=sample_rate)
+    chunks = []
+    for frame in container.decode(stream):
+        converted = resampler.resample(frame)
+        if not isinstance(converted, list):
+            converted = [converted]
+        for item in converted:
+            chunks.append(item.to_ndarray().reshape(-1))
+    container.close()
+    return np.concatenate(chunks).astype(np.float32) / 32768.0
+
+
+def _acoustic_embedding(samples, start: float, end: float, sample_rate: int = 16000):
+    """Compact voice-timbre features for a local, dependency-light fallback."""
+    import numpy as np
+
+    clip = samples[int(start * sample_rate):int(end * sample_rate)]
+    if len(clip) < sample_rate // 5:
+        return None
+    frame_size = int(sample_rate * 0.025)
+    hop = int(sample_rate * 0.010)
+    frames = []
+    window = np.hanning(frame_size)
+    for pos in range(0, max(1, len(clip) - frame_size), hop):
+        frame = clip[pos:pos + frame_size]
+        if len(frame) == frame_size:
+            spectrum = np.abs(np.fft.rfft(frame * window)) + 1e-7
+            power = spectrum ** 2
+            freqs = np.fft.rfftfreq(frame_size, 1 / sample_rate)
+            bands = [(80, 300), (300, 1000), (1000, 3000), (3000, 7000)]
+            band_energy = [float(power[(freqs >= low) & (freqs < high)].mean()) for low, high in bands]
+            zcr = float(np.mean(np.abs(np.diff(np.signbit(frame)))))
+            centroid = float((freqs * power).sum() / power.sum())
+            frames.append([float(np.log(power.mean())), centroid / 4000.0, zcr, *np.log1p(band_energy)])
+    if not frames:
+        return None
+    return np.asarray(frames, dtype=np.float32).mean(axis=0)
+
+
+def _acoustic_speakers(audio_path: Path, segments: list[Segment]) -> bool:
+    """Cluster segment voice features into two local speaker tracks.
+
+    This is a fallback, not speaker identification. It is useful when pyannote
+    is unavailable and avoids the old all-``SPEAKER_00`` output.
+    """
+    if len(segments) < 4:
+        return False
+    try:
+        import numpy as np
+    except ImportError:
+        LOGGER.warning("numpy unavailable; speaker labels remain generic")
+        return False
+    try:
+        samples = _audio_samples(audio_path)
+        vectors = [_acoustic_embedding(samples, item.start, item.end) for item in segments]
+        valid = [(index, vector) for index, vector in enumerate(vectors) if vector is not None]
+        if len(valid) < 4:
+            return False
+        matrix = np.asarray([vector for _, vector in valid])
+        matrix = (matrix - matrix.mean(axis=0)) / (matrix.std(axis=0) + 1e-6)
+        # Deterministic two-cluster k-means keeps the fallback lightweight.
+        centers = matrix[[0, int(np.argmax(np.sum((matrix - matrix[0]) ** 2, axis=1)))]]
+        for _ in range(30):
+            distances = ((matrix[:, None, :] - centers[None, :, :]) ** 2).sum(axis=2)
+            labels = distances.argmin(axis=1)
+            new_centers = np.asarray(
+                [matrix[labels == cluster].mean(axis=0) if np.any(labels == cluster) else centers[cluster]
+                 for cluster in range(2)]
+            )
+            if np.allclose(new_centers, centers):
+                break
+            centers = new_centers
+        counts = np.bincount(labels, minlength=2)
+        if min(counts) < 2:
+            return False
+        first_seen = {int(label): position for position, label in enumerate(labels)}
+        order = sorted(first_seen, key=first_seen.get)
+        remap = {old: new for new, old in enumerate(order)}
+        for (index, _), label in zip(valid, labels):
+            segments[index].speaker = f"SPEAKER_{remap[int(label)]:02d}"
+        return True
+    except Exception as exc:
+        LOGGER.warning("Акустическая диаризация недоступна: %s", exc)
+        return False
 
 
 def transcribe_audio(
@@ -146,12 +226,19 @@ def transcribe_audio(
         float(getattr(info, "language_probability", 0.0)),
     )
 
-    _heuristic_speakers(segments)
+    diarization_used = False
     if diarization:
         annotation = _pyannote_annotation(path, device)
         if annotation is not None:
             for segment in segments:
-                segment.speaker = _speaker_from_annotation(segment, annotation) or segment.speaker
+                segment.speaker = _speaker_from_annotation(segment, annotation) or "SPEAKER_00"
+            diarization_used = True
+        else:
+            diarization_used = _acoustic_speakers(path, segments)
+    if not diarization_used:
+        for segment in segments:
+            segment.speaker = "SPEAKER_00"
+        LOGGER.warning("Настоящая диаризация не активна; все реплики помечены SPEAKER_00")
     return segments
 
 
