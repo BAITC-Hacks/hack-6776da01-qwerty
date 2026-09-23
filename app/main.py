@@ -59,26 +59,39 @@ if result:
     speakers = sorted(set(re.findall(r"\]\s*([^:]+):", transcript)))
     if len(speakers) <= 1:
         st.warning("Голоса пока не удалось надёжно разделить. Метки SPEAKER будут проверены вручную перед финальной отправкой.")
-    st.markdown('<div class="section">', unsafe_allow_html=True)
-    st.subheader("Саммари")
-    st.write(summary)
-    st.markdown('</div>', unsafe_allow_html=True)
-    st.markdown('<div class="section">', unsafe_allow_html=True)
-    st.subheader("Поручения")
-    if tasks:
-        st.dataframe(tasks, use_container_width=True, hide_index=True, column_config={
-            "task": st.column_config.TextColumn("Поручение", width="large"),
-            "responsible": st.column_config.TextColumn("Ответственный"),
-            "deadline": st.column_config.TextColumn("Срок"),
-        })
-    else:
-        st.warning("Поручения не найдены. Проверьте транскрипт вручную.")
-    st.markdown('</div>', unsafe_allow_html=True)
-    with st.expander("Показать полный транскрипт"):
-        st.text(transcript)
-    export_col, json_col = st.columns(2)
-    with export_col:
-        st.download_button("⬇️ Скачать протокол DOCX", data=make_docx(transcript, summary, tasks), file_name="protocol.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", type="primary")
-    with json_col:
-        structured = {"summary": summary, "tasks": tasks, "transcript": transcript, "speakers": speakers}
-        st.download_button("↗️ Скачать JSON для интеграции", data=json.dumps(structured, ensure_ascii=False, indent=2), file_name="protocol.json", mime="application/json")
+    edited_tasks = tasks
+    result_tab, transcript_tab, export_tab = st.tabs(["📌 Результат", "🎙️ Транскрипт", "📤 Экспорт"])
+    with result_tab:
+        st.markdown('<div class="section">', unsafe_allow_html=True)
+        st.subheader("Саммари")
+        st.write(summary)
+        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section">', unsafe_allow_html=True)
+        st.subheader("Поручения")
+        if tasks:
+            display_tasks = [dict(item, status="Не проверено") for item in tasks]
+            edited_tasks = st.data_editor(display_tasks, use_container_width=True, hide_index=True, disabled=["task", "responsible", "deadline"], column_config={
+                "task": st.column_config.TextColumn("Поручение", width="large"),
+                "responsible": st.column_config.TextColumn("Ответственный"),
+                "deadline": st.column_config.TextColumn("Срок"),
+                "status": st.column_config.SelectboxColumn("Статус", options=["Не проверено", "В работе", "Выполнено", "Просрочено"]),
+            })
+            st.caption("Статус можно изменить перед экспортом протокола.")
+        else:
+            st.warning("Поручения не найдены. Проверьте транскрипт вручную.")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with transcript_tab:
+        st.subheader("Полный транскрипт")
+        st.caption("Временные метки и локальные метки говорящих помогают быстро проверить результат.")
+        st.text_area("Текст совещания", transcript, height=480, label_visibility="collapsed")
+
+    structured = {"summary": summary, "tasks": edited_tasks, "transcript": transcript, "speakers": speakers}
+    with export_tab:
+        st.subheader("Скачать результат")
+        st.write("DOCX удобно отправить коллегам, JSON — передать в СЭД, CRM или будущий дашборд.")
+        export_col, json_col = st.columns(2)
+        with export_col:
+            st.download_button("⬇️ Скачать протокол DOCX", data=make_docx(transcript, summary, edited_tasks), file_name="protocol.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", type="primary")
+        with json_col:
+            st.download_button("↗️ Скачать JSON для интеграции", data=json.dumps(structured, ensure_ascii=False, indent=2), file_name="protocol.json", mime="application/json")
