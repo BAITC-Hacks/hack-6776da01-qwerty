@@ -13,11 +13,11 @@ from pdf_exporter import make_pdf
 from quality import validate_protocol
 from transcription import segments_to_text, transcribe_audio
 
-st.set_page_config(page_title="Samruk-Kazyna · MeetingMind", page_icon="🟦", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="MeetingMind", page_icon="📝", layout="wide", initial_sidebar_state="expanded")
 st.markdown("""
 <style>
 .block-container {max-width: 1180px; padding-top: 0; padding-bottom: 3rem;}
-body {background-color: #f5f3ef; background-image: radial-gradient(#ded8ce 1px, transparent 1px), radial-gradient(#ded8ce 1px, transparent 1px); background-size: 22px 22px; background-position: 0 0, 11px 11px;}
+body {background: #0b1020;}
 .sk-nav {display: flex; align-items: center; gap: 1.7rem; margin: -1rem -1rem 1.6rem; padding: .85rem 1.2rem; background: rgba(255,255,255,.96); border-bottom: 1px solid #e7e1d8; color: #0d3767;}
 .sk-brand {display: flex; align-items: center; gap: .65rem; min-width: 245px; color: #0d3767; font-weight: 700; letter-spacing: .08em;}
 .sk-mark {display: grid; place-items: center; width: 38px; height: 38px; border: 2px solid #b69b78; border-radius: 50%; color: #0d3767; font-size: 1.15rem;}
@@ -26,11 +26,11 @@ body {background-color: #f5f3ef; background-image: radial-gradient(#ded8ce 1px, 
 .sk-links span {white-space: nowrap;}
 .sk-news {font-weight: 800; font-size: 1.15rem; letter-spacing: .02em;}
 .sk-tools {font-size: .88rem; color: #8e765a; white-space: nowrap;}
-.hero {position: relative; overflow: hidden; display: grid; grid-template-columns: 1fr .92fr; min-height: 355px; background: #fff; border: 1px solid #e7e1d8; color: #0d3767; margin-bottom: 1.5rem; box-shadow: 0 12px 28px rgba(50,44,35,.12);}
+.hero {position: relative; overflow: hidden; min-height: 300px; background: radial-gradient(circle at 90% 15%, rgba(96,165,250,.42), transparent 32%), linear-gradient(135deg,#111827 0%,#172554 48%,#2563eb 100%); border-radius: 24px; color: white; margin-bottom: 1.5rem; box-shadow: 0 18px 45px rgba(15,23,42,.28);}
 .hero-copy {padding: 3rem 3.5rem 2.7rem; display: flex; flex-direction: column; justify-content: center;}
 .hero-quote {color: #b69b78; font-size: 3.2rem; line-height: .7; margin-bottom: 1.4rem;}
-.hero h1 {margin: 0; max-width: 560px; font-size: 2.35rem; line-height: 1.18; letter-spacing: -0.035em; font-weight: 500; color: #0d3767;}
-.hero p {max-width: 560px; margin: 1.2rem 0 0; color: #4b5563; font-size: 1rem; line-height: 1.65;}
+.hero h1 {margin: 0; max-width: 680px; font-size: 2.55rem; line-height: 1.18; letter-spacing: -0.035em; font-weight: 700; color: #fff;}
+.hero p {max-width: 680px; margin: 1.2rem 0 0; color: #dbeafe; font-size: 1.05rem; line-height: 1.65;}
 .hero-visual {position: relative; display: grid; place-items: center; overflow: hidden; background: linear-gradient(145deg, #d8e7ef 0%, #edf1ed 48%, #cbb99f 100%);}
 .hero-visual:before {content: ""; position: absolute; inset: 12% 10%; border: 1px solid rgba(13,55,103,.22); border-radius: 50%; box-shadow: 0 0 0 28px rgba(255,255,255,.26), 0 0 0 58px rgba(13,55,103,.08);}
 .hero-visual:after {content: "AI"; position: relative; display: grid; place-items: center; width: 148px; height: 148px; border-radius: 50%; background: #0d3767; color: #fff; font-size: 3.2rem; font-weight: 700; letter-spacing: .08em; box-shadow: 12px 18px 32px rgba(13,55,103,.25);}
@@ -52,9 +52,7 @@ body {background-color: #f5f3ef; background-image: radial-gradient(#ded8ce 1px, 
 [data-testid="stMetricValue"] {color: #f8fafc;}
 .stButton > button, .stDownloadButton > button {border-radius: 10px; font-weight: 650; min-height: 2.6rem;}
 </style>
-<div class="sk-nav"><div class="sk-brand"><div class="sk-mark">✦</div><div>SAMRUK<br><small>KAZYNA</small></div></div><div class="sk-links"><span>О Фонде</span><span>Инвесторам</span><span>Компании</span><span>Пресс-центр</span><span>Закупки</span></div><div class="sk-news">SK NEWS</div><div class="sk-tools">Рус⌄　⌕</div></div>
-<div class="hero"><div class="hero-copy"><div class="hero-quote">“</div><div class="eyebrow">SAMRUK-KAZYNA GROUP · DIGITAL CONTROL</div><h1>MeetingMind: цифровой протокол совещаний</h1><p>Фиксируйте решения, поручения и сроки в едином корпоративном контуре — быстро, прозрачно и с контролем исполнения.</p><div class="privacy">Локальная обработка · данные не покидают ваш компьютер</div></div><div class="hero-visual"></div></div>
-<div class="sk-datebar"><div>01　Протокол</div><div>02　Транскрипт</div><div>03　Поручения</div><div>04　Контроль</div></div>
+<div class="hero"><div class="hero-copy"><div class="hero-quote">“</div><div class="eyebrow">AI MEETING INTELLIGENCE</div><h1>MeetingMind</h1><p>Автоматический протокол совещания: речь, саммари и поручения в одном месте.</p><div class="privacy">Локальная обработка · данные не покидают ваш компьютер</div></div></div>
 """, unsafe_allow_html=True)
 st.info("Внимание: ведётся запись и ИИ-транскрибация совещания. Участники должны быть уведомлены. Обработка данных происходит строго локально (On-Premise) без передачи во внешние облачные API.")
 
@@ -90,15 +88,15 @@ def _overdue(deadline: str) -> bool:
 
 
 with st.sidebar:
-    st.markdown("## Samruk-Kazyna")
-    st.caption("MeetingMind · автопротоколирование совещаний")
+    st.markdown("## 📝 MeetingMind")
+    st.caption("Автопротоколирование совещаний")
     st.divider()
     st.subheader("Настройки")
     model_size = st.selectbox("Размер локальной модели", ["small", "medium"], index=0)
     language_label = st.selectbox("Язык записи", ["Автоопределение", "Русский", "Казахский"], index=0, help="Для чисто русской записи выбор языка повышает качество распознавания.")
     language = {"Автоопределение": None, "Русский": "ru", "Казахский": "kk"}[language_label]
     smart_mode = st.checkbox("🧠 Умный локальный анализ", help="Использует Ollama на этом компьютере. Если Ollama недоступен, включится обычный анализатор.")
-    demo_mode = st.checkbox("🎭 Демо-режим: разделить диалог на 2 спикеров по паузам", help="Только визуальная демонстрация. Не является настоящей диаризацией.")
+    demo_mode = st.checkbox("🎭 Разделить спикеров для демо", value=True, help="Эвристическая разметка для демонстрации; не заменяет акустическую диаризацию.")
     st.divider()
     st.markdown("**Как это работает**")
     st.markdown("1. Уведомьте участников и загрузите запись\n2. Создайте протокол\n3. Назначьте имена и проверьте поручения\n4. Сформируйте уведомления и скачайте протокол")
@@ -214,3 +212,5 @@ if result:
             st.download_button("Скачать PDF", data=make_pdf(transcript, summary, edited_tasks), file_name="protocol.pdf", mime="application/pdf")
         with json_col:
             st.download_button("Скачать JSON", data=json.dumps(structured, ensure_ascii=False, indent=2), file_name="protocol.json", mime="application/json")
+
+st.markdown("<div style='text-align:center;color:#64748b;font-size:.75rem;margin-top:2.5rem;'>Samruk-Kazyna &lt;3</div>", unsafe_allow_html=True)
