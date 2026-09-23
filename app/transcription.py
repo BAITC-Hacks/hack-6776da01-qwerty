@@ -331,36 +331,77 @@ def _name_in_text(text: str) -> tuple[str, re.Match[str]] | None:
     if generic:
         before = text[max(0, generic.start() - 28):generic.start()].lower()
         if "ответственн" not in before:
-            return generic.group(1), generic
+            raw = generic.group(1)
+            # Whisper может добавить/потерять одну букву в имени или
+            # отчестве: нормализуем к известному имени по близости строк.
+            from difflib import SequenceMatcher
+
+            closest = max(
+                (canonical for canonical, _ in NAME_PATTERNS),
+                key=lambda canonical: SequenceMatcher(None, raw.lower(), canonical.lower()).ratio(),
+            )
+            score = SequenceMatcher(None, raw.lower(), closest.lower()).ratio()
+            return (closest if score >= 0.78 else raw), generic
     return None
 
 
 def _apply_name_hints(segments: list[Segment]) -> None:
-    """Привязывает ответную реплику к имени после прямого обращения."""
+    """Восстановить имена по логике очереди реплик совещания.
+
+    Обращение открывает ход адресата. Несколько следующих Whisper-сегментов
+    считаются продолжением его ответа; новая команда/реплика председателя
+    закрывает ход. Это особенно важно, когда VAD склеил несколько фраз.
+    """
     pending_name: str | None = None
     pending_turns = 0
+    pending_assigned = 0
+    saw_name_anchor = False
     for index, segment in enumerate(segments):
         text = segment.text
         found = _name_in_text(text)
         is_response_request = bool(found and RESPONSE_CUES.search(text))
         is_chair_line = bool(CHAIR_CUES.search(text))
 
-        if pending_name and index > 0 and not is_chair_line:
-            segment.speaker = pending_name
-            pending_turns -= 1
-            if pending_turns <= 0:
+        # Явное новое обращение всегда важнее предыдущего хода.
+        if found and is_response_request and pending_name:
+            pending_name = None
+            pending_turns = 0
+            pending_assigned = 0
+
+        if pending_name and index > 0:
+            # «Согласен», «Итого», «Это недопустимо» обычно возвращают слово
+            # председателю. «Хорошо, сделаю» оставляем адресату.
+            if is_chair_line and pending_assigned:
                 pending_name = None
+                pending_turns = 0
+                pending_assigned = 0
+            else:
+                segment.speaker = pending_name
+                pending_turns -= 1
+                pending_assigned += 1
+                if pending_turns <= 0:
+                    pending_name = None
+                    pending_assigned = 0
 
         if is_response_request and found:
             pending_name = found[0]
-            pending_turns = 2
+            pending_turns = 4
+            pending_assigned = 0
+            saw_name_anchor = True
+            if segment.speaker.startswith("SPEAKER_") or segment.speaker == "Участник":
+                segment.speaker = "Председатель"
+        elif found:
+            saw_name_anchor = True
             if segment.speaker.startswith("SPEAKER_") or segment.speaker == "Участник":
                 segment.speaker = "Председатель"
 
-        if pending_name and index + 1 < len(segments):
-            if CHAIR_CUES.search(segments[index + 1].text):
-                pending_name = None
-                pending_turns = 0
+    # Если в транскрипте есть хотя бы одно надёжное обращение, оставшиеся
+    # безымянные фрагменты в управленческом совещании логично относятся к
+    # председателю, а не к выдуманному новому speaker.
+    if saw_name_anchor:
+        for segment in segments:
+            if segment.speaker.startswith("SPEAKER_") or segment.speaker == "Участник":
+                segment.speaker = "Председатель"
 
 
 def _apply_voice_memory(audio_path: Path, segments: list[Segment]) -> bool:
