@@ -75,6 +75,8 @@ with st.sidebar:
     st.divider()
     st.subheader("Настройки")
     model_size = st.selectbox("Размер локальной модели", ["small", "medium"], index=0)
+    language_label = st.selectbox("Язык записи", ["Автоопределение", "Русский", "Казахский"], index=0, help="Для чисто русской записи выбор языка повышает качество распознавания.")
+    language = {"Автоопределение": None, "Русский": "ru", "Казахский": "kk"}[language_label]
     smart_mode = st.checkbox("🧠 Умный локальный анализ", help="Использует Ollama на этом компьютере. Если Ollama недоступен, включится обычный анализатор.")
     demo_mode = st.checkbox("🎭 Демо-режим: разделить диалог на 2 спикеров по паузам", help="Только визуальная демонстрация. Не является настоящей диаризацией.")
     st.divider()
@@ -105,7 +107,7 @@ if audio and st.button("Создать протокол", type="primary"):
         audio_path = temp.name
     try:
         with st.spinner("Распознаю аудио локально. Первый запуск скачает модель..."):
-            segments = transcribe_audio(audio_path, model_size)
+            segments = transcribe_audio(audio_path, model_size, language=language)
         raw_transcript = segments_to_text(segments)
         if demo_mode and len(_speakers(raw_transcript)) <= 1:
             raw_transcript = _demo_split(raw_transcript)
