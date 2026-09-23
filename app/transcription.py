@@ -28,9 +28,9 @@ LOGGER = logging.getLogger(__name__)
 
 NAME_PATTERNS = (
     ("Асхат Ерланович", re.compile(r"\bАсхат\s+Ерланович\b", re.IGNORECASE)),
-    ("Гульмира Сериковна", re.compile(r"\bГульмира\s+Сер[ие]ковна\b", re.IGNORECASE)),
+    ("Гульмира Сериковна", re.compile(r"\bГульмир[аеы]?\s+Сер[ие]ковн[аы]\b", re.IGNORECASE)),
     ("Тимур Булатович", re.compile(r"\bТимур\s+Б[ау]латович\b", re.IGNORECASE)),
-    ("Айнур Каировна", re.compile(r"\bАйнур\s+Каировна\b", re.IGNORECASE)),
+    ("Айнур Каировна", re.compile(r"\bАйн[уо]р\s+Каировн[аы]\b", re.IGNORECASE)),
     ("Нурлан Сагатович", re.compile(r"\bНурлан\s+С[ао]гатович\b", re.IGNORECASE)),
 )
 RESPONSE_CUES = re.compile(
@@ -55,7 +55,13 @@ class VoiceMemory:
             try:
                 import json
 
-                self.profiles = json.loads(path.read_text(encoding="utf-8"))
+                loaded = json.loads(path.read_text(encoding="utf-8"))
+                # Старый формат с одним усреднённым embedding был неточным;
+                # не используем его после обновления памяти голосов.
+                self.profiles = {
+                    name: profile for name, profile in loaded.items()
+                    if isinstance(profile, dict) and profile.get("embeddings")
+                }
             except Exception as exc:
                 LOGGER.warning("Не удалось прочитать память голосов: %s", exc)
 
@@ -68,17 +74,18 @@ class VoiceMemory:
         return vector / norm if norm else vector
 
     def enroll(self, name: str, vector) -> None:
-        import numpy as np
-
         vector = self._normalise(vector)
         old = self.profiles.get(name)
-        if old:
-            count = int(old.get("samples", 1))
-            vector = self._normalise((np.asarray(old["embedding"], dtype=np.float32) * count + vector) / (count + 1))
-            count += 1
+        if old and old.get("embeddings"):
+            embeddings = old["embeddings"]
+        elif old and old.get("embedding"):
+            embeddings = [old["embedding"]]
         else:
-            count = 1
-        self.profiles[name] = {"embedding": vector.tolist(), "samples": count}
+            embeddings = []
+        embeddings.append(vector.tolist())
+        # Не раздуваем локальный файл; храним несколько реальных эталонов,
+        # чтобы один неудачный или короткий фрагмент не испортил профиль.
+        self.profiles[name] = {"embeddings": embeddings[-8:], "samples": len(embeddings[-8:])}
 
     def match(self, vector, threshold: float = 0.62) -> str | None:
         import numpy as np
@@ -86,11 +93,14 @@ class VoiceMemory:
         vector = self._normalise(vector)
         candidates = []
         for name, profile in self.profiles.items():
-            profile_vector = self._normalise(profile["embedding"])
-            candidates.append((float(np.dot(vector, profile_vector)), name))
+            raw_embeddings = profile.get("embeddings") or [profile.get("embedding")]
+            scores = [float(np.dot(vector, self._normalise(item))) for item in raw_embeddings if item]
+            if scores:
+                candidates.append((max(scores), name))
         if not candidates:
             return None
         score, name = max(candidates)
+        threshold = float(os.getenv("VOICE_MATCH_THRESHOLD", str(threshold)))
         LOGGER.debug("Голос сравнен с %s: %.3f", name, score)
         return name if score >= threshold else None
 
@@ -313,35 +323,85 @@ def _name_in_text(text: str) -> tuple[str, re.Match[str]] | None:
             if "ответственн" in before:
                 continue
             return canonical, match
+    # Для новых участников, которых нет в словаре: имя + отчество.
+    generic = re.search(
+        r"\b([А-ЯЁ][а-яё]{2,}\s+[А-ЯЁ][а-яё]{4,}(?:ович|евич|овна|евна|ична))\b",
+        text,
+    )
+    if generic:
+        before = text[max(0, generic.start() - 28):generic.start()].lower()
+        if "ответственн" not in before:
+            raw = generic.group(1)
+            # Whisper может добавить/потерять одну букву в имени или
+            # отчестве: нормализуем к известному имени по близости строк.
+            from difflib import SequenceMatcher
+
+            closest = max(
+                (canonical for canonical, _ in NAME_PATTERNS),
+                key=lambda canonical: SequenceMatcher(None, raw.lower(), canonical.lower()).ratio(),
+            )
+            score = SequenceMatcher(None, raw.lower(), closest.lower()).ratio()
+            return (closest if score >= 0.78 else raw), generic
     return None
 
 
 def _apply_name_hints(segments: list[Segment]) -> None:
-    """Привязывает ответную реплику к имени после прямого обращения."""
+    """Восстановить имена по логике очереди реплик совещания.
+
+    Обращение открывает ход адресата. Несколько следующих Whisper-сегментов
+    считаются продолжением его ответа; новая команда/реплика председателя
+    закрывает ход. Это особенно важно, когда VAD склеил несколько фраз.
+    """
     pending_name: str | None = None
     pending_turns = 0
+    pending_assigned = 0
+    saw_name_anchor = False
     for index, segment in enumerate(segments):
         text = segment.text
         found = _name_in_text(text)
         is_response_request = bool(found and RESPONSE_CUES.search(text))
         is_chair_line = bool(CHAIR_CUES.search(text))
 
-        if pending_name and index > 0 and not is_chair_line:
-            segment.speaker = pending_name
-            pending_turns -= 1
-            if pending_turns <= 0:
+        # Явное новое обращение всегда важнее предыдущего хода.
+        if found and is_response_request and pending_name:
+            pending_name = None
+            pending_turns = 0
+            pending_assigned = 0
+
+        if pending_name and index > 0:
+            # «Согласен», «Итого», «Это недопустимо» обычно возвращают слово
+            # председателю. «Хорошо, сделаю» оставляем адресату.
+            if is_chair_line and pending_assigned:
                 pending_name = None
+                pending_turns = 0
+                pending_assigned = 0
+            else:
+                segment.speaker = pending_name
+                pending_turns -= 1
+                pending_assigned += 1
+                if pending_turns <= 0:
+                    pending_name = None
+                    pending_assigned = 0
 
         if is_response_request and found:
             pending_name = found[0]
-            pending_turns = 2
+            pending_turns = 4
+            pending_assigned = 0
+            saw_name_anchor = True
+            if segment.speaker.startswith("SPEAKER_") or segment.speaker == "Участник":
+                segment.speaker = "Председатель"
+        elif found:
+            saw_name_anchor = True
             if segment.speaker.startswith("SPEAKER_") or segment.speaker == "Участник":
                 segment.speaker = "Председатель"
 
-        if pending_name and index + 1 < len(segments):
-            if CHAIR_CUES.search(segments[index + 1].text):
-                pending_name = None
-                pending_turns = 0
+    # Если в транскрипте есть хотя бы одно надёжное обращение, оставшиеся
+    # безымянные фрагменты в управленческом совещании логично относятся к
+    # председателю, а не к выдуманному новому speaker.
+    if saw_name_anchor:
+        for segment in segments:
+            if segment.speaker.startswith("SPEAKER_") or segment.speaker == "Участник":
+                segment.speaker = "Председатель"
 
 
 def _apply_voice_memory(audio_path: Path, segments: list[Segment]) -> bool:
@@ -403,9 +463,14 @@ def transcribe_audio(
     options: dict[str, Any] = {
         "language": _language(language),
         "vad_filter": True,
+        "vad_parameters": {"min_silence_duration_ms": 750, "speech_pad_ms": 300},
         "beam_size": 5,
+        # Сохраняем контекст: это важно для поручений, сроков и имён.
         "condition_on_previous_text": True,
         "temperature": 0.0,
+        "compression_ratio_threshold": 2.4,
+        "log_prob_threshold": -1.0,
+        "no_speech_threshold": 0.35,
     }
     if options["language"] is None:
         options.pop("language")
@@ -430,8 +495,12 @@ def transcribe_audio(
             for segment in segments:
                 segment.speaker = _speaker_from_annotation(segment, annotation) or "SPEAKER_00"
             diarization_used = True
-        else:
+        elif _voice_encoder() is not None:
+            # Кластеризация используется только вместе с voice encoder;
+            # без него она давала ложные смены говорящих и ухудшала протокол.
             diarization_used = _acoustic_speakers(path, segments)
+        else:
+            LOGGER.warning("SpeechBrain не загружен: отключена эвристическая диаризация")
     if not diarization_used:
         for segment in segments:
             segment.speaker = "SPEAKER_00"

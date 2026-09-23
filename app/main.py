@@ -92,6 +92,12 @@ with st.sidebar:
     st.caption("Автопротоколирование совещаний")
     st.divider()
     st.subheader("Настройки")
+    model_size = st.selectbox("Размер локальной модели", ["small", "medium", "large-v3-turbo"], index=0)
+    language = st.selectbox("Язык речи", ["auto", "ru", "kk"], index=0, help="Для смешанной речи оставьте auto.")
+    if model_size == "medium":
+        st.caption("Medium точнее только при достаточных ресурсах; на CPU может быть медленнее small.")
+    elif model_size == "large-v3-turbo":
+        st.caption("Рекомендуется для GPU. На CPU эта модель будет очень медленной.")
     model_size = st.selectbox("Размер локальной модели", ["small", "medium"], index=0)
     language_label = st.selectbox("Язык записи", ["Автоопределение", "Русский", "Казахский"], index=0, help="Для чисто русской записи выбор языка повышает качество распознавания.")
     language = {"Автоопределение": None, "Русский": "ru", "Казахский": "kk"}[language_label]
@@ -125,6 +131,14 @@ if audio and st.button("Создать протокол", type="primary"):
     with tempfile.NamedTemporaryFile(delete=False, suffix=Path(audio.name).suffix) as temp:
         temp.write(audio.getbuffer())
         audio_path = temp.name
+
+    with st.spinner("Распознаю аудио локально. Первый запуск скачает модель..."):
+        segments = transcribe_audio(audio_path, model_size, language=None if language == "auto" else language)
+    transcript = segments_to_text(segments)
+    tasks = extract_tasks(transcript)
+    summary = make_summary(transcript, tasks)
+    st.session_state["result"] = {"transcript": transcript, "tasks": tasks, "summary": summary}
+
     try:
         with st.spinner("Распознаю аудио локально. Первый запуск скачает модель..."):
             segments = transcribe_audio(audio_path, model_size, language=language, diarization=True)
@@ -137,6 +151,7 @@ if audio and st.button("Создать протокол", type="primary"):
         st.error(f"Не удалось обработать запись: {exc}")
     finally:
         Path(audio_path).unlink(missing_ok=True)
+
 
 result = st.session_state.get("result")
 if result:
