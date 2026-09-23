@@ -19,6 +19,11 @@ st.markdown("""
 <style>
 .block-container {max-width: 1120px; padding-top: 1.8rem; padding-bottom: 4rem;}
 body {background: #070d18;}
+[data-testid="stAppViewContainer"], [data-testid="stHeader"] {background:#070d18;}
+[data-testid="stSidebar"] {background:#0f172a; border-right:1px solid rgba(148,163,184,.12);}
+[data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3, [data-testid="stSidebar"] p, [data-testid="stSidebar"] label {color:#e5e7eb;}
+[data-testid="stSidebar"] [data-testid="stCaptionContainer"] p {color:#94a3b8;}
+[data-testid="stSidebar"] hr {border-color:rgba(148,163,184,.18);}
 .topbar {display:flex; align-items:center; justify-content:space-between; margin-bottom:1.4rem; color:#94a3b8; font-size:.78rem; letter-spacing:.04em; text-transform:uppercase;}
 .brand {display:flex; align-items:center; gap:.7rem; color:#f8fafc; font-weight:800; letter-spacing:.12em;}
 .brand-mark {display:grid; place-items:center; width:34px; height:34px; border-radius:11px; background:linear-gradient(135deg,#38bdf8,#6366f1); color:white; font-size:.88rem; box-shadow:0 8px 22px rgba(56,189,248,.25);}
