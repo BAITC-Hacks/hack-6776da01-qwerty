@@ -13,7 +13,28 @@ from quality import validate_protocol
 from transcription import segments_to_text, transcribe_audio
 
 st.set_page_config(page_title="MeetingMind", page_icon="📝", layout="wide", initial_sidebar_state="expanded")
-st.markdown("""<style>.block-container{max-width:1180px;padding-top:2rem}.hero{padding:1.4rem 1.6rem;border-radius:18px;background:linear-gradient(135deg,#172554,#2563eb);color:white;margin-bottom:1.2rem}.hero h1{margin:0;font-size:2.35rem}</style><div class="hero"><h1>MeetingMind</h1><p>Автоматический протокол совещания: речь, саммари и поручения в одном месте.</p></div>""", unsafe_allow_html=True)
+st.markdown("""
+<style>
+.block-container {max-width: 1180px; padding-top: 1.6rem; padding-bottom: 3rem;}
+.hero {position: relative; overflow: hidden; padding: 2rem 2.2rem; border-radius: 24px; background: radial-gradient(circle at 90% 15%, rgba(96,165,250,.42), transparent 32%), linear-gradient(135deg,#111827 0%,#172554 48%,#2563eb 100%); color: white; margin-bottom: 1.4rem; box-shadow: 0 18px 45px rgba(15,23,42,.28);}
+.hero h1 {margin: 0; font-size: 2.55rem; letter-spacing: -0.045em;}
+.hero p {max-width: 650px; margin: .6rem 0 0; color: #dbeafe; font-size: 1.05rem; line-height: 1.55;}
+.eyebrow {font-size: .78rem; letter-spacing: .14em; text-transform: uppercase; color: #bfdbfe; font-weight: 700; margin-bottom: .65rem;}
+.privacy {display: inline-block; margin-top: 1.15rem; padding: .42rem .7rem; border: 1px solid rgba(191,219,254,.35); border-radius: 999px; color: #eff6ff; font-size: .82rem; background: rgba(15,23,42,.2);}
+.upload-card {padding: 1.25rem 1.35rem .7rem; margin: 1rem 0 1.4rem; border: 1px solid rgba(148,163,184,.25); border-radius: 18px; background: rgba(30,41,59,.3);}
+.empty-title {font-size: 1.45rem; font-weight: 700; margin: .35rem 0 .25rem;}
+.empty-subtitle {color: #94a3b8; margin-bottom: 1.15rem;}
+.step-card {padding: 1rem; min-height: 105px; border: 1px solid rgba(148,163,184,.22); border-radius: 14px; background: rgba(30,41,59,.32);}
+.step-number {color: #93c5fd; font-size: .78rem; font-weight: 800; letter-spacing: .08em;}
+.step-card strong {display: block; margin: .35rem 0; color: #f8fafc;}
+.step-card span {color: #94a3b8; font-size: .88rem;}
+[data-testid="stMetric"] {padding: 1rem 1.1rem; border: 1px solid rgba(148,163,184,.2); border-radius: 16px; background: rgba(30,41,59,.32);}
+[data-testid="stMetricLabel"] {color: #94a3b8;}
+[data-testid="stMetricValue"] {color: #f8fafc;}
+.stButton > button, .stDownloadButton > button {border-radius: 10px; font-weight: 650; min-height: 2.6rem;}
+</style>
+<div class="hero"><div class="eyebrow">AI meeting intelligence</div><h1>MeetingMind</h1><p>Автоматический протокол совещания: речь, саммари и поручения в одном месте.</p><div class="privacy">🔒 Локальная обработка · данные не покидают ваш компьютер</div></div>
+""", unsafe_allow_html=True)
 st.info("🔔 Внимание: ведётся запись и ИИ-транскрибация совещания. Участники должны быть уведомлены. Обработка данных происходит строго локально (On-Premise) без передачи во внешние облачные API.")
 
 
@@ -48,6 +69,9 @@ def _overdue(deadline: str) -> bool:
 
 
 with st.sidebar:
+    st.markdown("## 📝 MeetingMind")
+    st.caption("Автопротоколирование совещаний")
+    st.divider()
     st.subheader("Настройки")
     model_size = st.selectbox("Размер локальной модели", ["small", "medium"], index=0)
     demo_mode = st.checkbox("🎭 Демо-режим: разделить диалог на 2 спикеров по паузам", help="Только визуальная демонстрация. Не является настоящей диаризацией.")
@@ -55,11 +79,20 @@ with st.sidebar:
     st.markdown("**Как это работает**")
     st.markdown("1. Уведомьте участников и загрузите запись\n2. Создайте протокол\n3. Назначьте имена и проверьте поручения\n4. Сформируйте уведомления и скачайте протокол")
 
-audio = st.file_uploader("Загрузите запись совещания", type=["mp3", "wav", "m4a", "mp4"], help="Поддерживаются MP3, WAV, M4A и MP4")
+st.markdown('<div class="upload-card">', unsafe_allow_html=True)
+st.markdown('<div class="empty-title">Загрузите запись совещания</div><div class="empty-subtitle">MP3, WAV, M4A или MP4 · обработка выполняется локально</div>', unsafe_allow_html=True)
+audio = st.file_uploader("Выберите аудиофайл", type=["mp3", "wav", "m4a", "mp4"], help="Поддерживаются MP3, WAV, M4A и MP4", label_visibility="collapsed")
+st.markdown('</div>', unsafe_allow_html=True)
 consent = st.checkbox("Участники уведомлены о записи и локальной ИИ-транскрибации")
 if audio:
     st.audio(audio)
     st.info(f"Файл готов к обработке: **{audio.name}** · {audio.size / 1024 / 1024:.1f} МБ")
+elif not st.session_state.get("result"):
+    st.markdown("<div class='empty-title'>От аудио к готовому протоколу</div><div class='empty-subtitle'>Три шага до результата</div>", unsafe_allow_html=True)
+    c1, c2, c3 = st.columns(3)
+    for col, number, title, text in [(c1, "01", "Загрузите запись", "MP3, WAV, M4A или MP4"), (c2, "02", "Проверьте результат", "Транскрипт, саммари и поручения"), (c3, "03", "Скачайте протокол", "DOCX, PDF или JSON")]:
+        with col:
+            st.markdown(f"<div class='step-card'><div class='step-number'>{number}</div><strong>{title}</strong><span>{text}</span></div>", unsafe_allow_html=True)
 
 if audio and st.button("Создать протокол", type="primary"):
     if not consent:
