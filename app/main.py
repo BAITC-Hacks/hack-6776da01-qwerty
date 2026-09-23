@@ -13,21 +13,11 @@ from pdf_exporter import make_pdf
 from quality import validate_protocol
 from transcription import segments_to_text, transcribe_audio
 
-st.set_page_config(page_title="Samruk-Kazyna · MeetingMind", layout="wide", initial_sidebar_state="expanded")
-theme_label = st.sidebar.selectbox("Тема интерфейса", ["Тёмная", "Светлая"], index=0, key="interface_theme")
+st.set_page_config(page_title="MeetingMind", page_icon="📝", layout="wide", initial_sidebar_state="expanded")
 st.markdown("""
 <style>
 .block-container {max-width: 1180px; padding-top: 0; padding-bottom: 3rem;}
 body {background: #0b1020;}
-.sk-nav {display: flex; align-items: center; gap: 1.7rem; margin: -1rem -1rem 1.6rem; padding: .85rem 1.2rem; background: rgba(255,255,255,.96); border-bottom: 1px solid #e7e1d8; color: #0d3767;}
-.sk-brand {display: flex; align-items: center; gap: .65rem; min-width: 245px; color: #0d3767; font-weight: 700; letter-spacing: .08em;}
-.sk-mark {display: grid; place-items: center; width: 38px; height: 38px; border: 2px solid #b69b78; border-radius: 50%; color: #0d3767; font-size: 1.15rem;}
-.sk-brand small {display: block; font-size: .62rem; letter-spacing: .25em; color: #b69b78;}
-.sk-links {display: flex; gap: 1.35rem; flex: 1; font-size: .88rem;}
-.sk-links a {white-space: nowrap; color: inherit; text-decoration: none;}
-.sk-links a:hover {text-decoration: underline;}
-.sk-news {font-weight: 800; font-size: 1.15rem; letter-spacing: .02em;}
-.sk-tools {font-size: .88rem; color: #8e765a; white-space: nowrap;}
 .hero {position: relative; overflow: hidden; min-height: 300px; background: radial-gradient(circle at 90% 15%, rgba(96,165,250,.42), transparent 32%), linear-gradient(135deg,#111827 0%,#172554 48%,#2563eb 100%); border-radius: 24px; color: white; margin-bottom: 1.5rem; box-shadow: 0 18px 45px rgba(15,23,42,.28);}
 .hero-copy {padding: 3rem 3.5rem 2.7rem; display: flex; flex-direction: column; justify-content: center;}
 .hero-quote {color: #b69b78; font-size: 3.2rem; line-height: .7; margin-bottom: 1.4rem;}
@@ -36,14 +26,6 @@ body {background: #0b1020;}
 .hero-visual {position: relative; display: grid; place-items: center; overflow: hidden; background: linear-gradient(145deg, #d8e7ef 0%, #edf1ed 48%, #cbb99f 100%);}
 .hero-visual:before {content: ""; position: absolute; inset: 12% 10%; border: 1px solid rgba(13,55,103,.22); border-radius: 50%; box-shadow: 0 0 0 28px rgba(255,255,255,.26), 0 0 0 58px rgba(13,55,103,.08);}
 .hero-visual:after {content: "AI"; position: relative; display: grid; place-items: center; width: 148px; height: 148px; border-radius: 50%; background: #0d3767; color: #fff; font-size: 3.2rem; font-weight: 700; letter-spacing: .08em; box-shadow: 12px 18px 32px rgba(13,55,103,.25);}
-.sk-datebar {display: grid; grid-template-columns: repeat(4, 1fr); margin: -1.5rem 0 1.8rem; position: relative;}
-.sk-datebar div {padding: 1rem; text-align: center; color: #fff; background: #b7a58e; border-right: 1px solid rgba(255,255,255,.35);}
-.sk-datebar div:first-child {background: #263d65;}
-.sk-context {display:grid; grid-template-columns:1.15fr 1fr 1fr; gap:1px; margin:1rem 0 1.5rem; background:#d9d0c2; border:1px solid #d9d0c2;}
-.sk-context-card {padding:1.2rem 1.3rem; background:#fff; min-height:115px;}
-.sk-context-card h3 {margin:0 0 .55rem; color:#0d3767; font-size:1rem; font-weight:650;}
-.sk-context-card p {margin:0; color:#667085; font-size:.86rem; line-height:1.45;}
-.sk-context-card a {display:inline-block; margin-top:.65rem; color:#0d3767; font-size:.78rem; text-decoration:none; font-weight:650;}
 .section {margin-top: 1.2rem; padding: .25rem 0; border: 0; background: transparent;}
 .eyebrow {font-size: .76rem; letter-spacing: .16em; text-transform: uppercase; color: #d9efff; font-weight: 700; margin-bottom: .65rem;}
 .privacy {display: inline-block; margin-top: 1.15rem; padding: .42rem .7rem; border: 1px solid rgba(255,255,255,.34); border-radius: 3px; color: #eff6ff; font-size: .82rem; background: rgba(3,35,73,.22);}
@@ -59,35 +41,7 @@ body {background: #0b1020;}
 [data-testid="stMetricValue"] {color: #f8fafc;}
 .stButton > button, .stDownloadButton > button {border-radius: 10px; font-weight: 650; min-height: 2.6rem;}
 </style>
-<div class="sk-nav"><div class="sk-brand"><div class="sk-mark">SK</div><div>SAMRUK<br><small>KAZYNA</small></div></div><div class="sk-links"><a href="https://sk.kz/index.php?lang=ru" target="_blank" rel="noopener noreferrer">Официальный сайт</a><a href="https://sk.kz/press-center/news/?lang=ru" target="_blank" rel="noopener noreferrer">Пресс-центр</a></div><div class="sk-news"><a href="https://sk.kz/press-center/news/?lang=ru" target="_blank" rel="noopener noreferrer">SK NEWS</a></div><div class="sk-tools">Локальный контур</div></div>
-<div class="hero"><div class="hero-copy"><div class="hero-quote">“</div><div class="eyebrow">SAMRUK-KAZYNA GROUP · DIGITAL CONTROL</div><h1>MeetingMind: цифровой протокол совещаний</h1><p>Фиксируйте решения, поручения и сроки в едином корпоративном контуре — быстро, прозрачно и с контролем исполнения.</p><div class="privacy">Локальная обработка · данные не покидают ваш компьютер</div></div><div class="hero-visual"></div></div>
-<div class="sk-datebar"><div>01　Протокол</div><div>02　Транскрипт</div><div>03　Поручения</div><div>04　Контроль</div></div>
-<div class="sk-context"><div class="sk-context-card"><h3>Корпоративная повестка</h3><p>Цифровизация, эффективность и контроль исполнения решений — в едином локальном рабочем контуре.</p><a href="https://sk.kz/index.php?lang=ru" target="_blank">Официальный сайт фонда</a></div><div class="sk-context-card"><h3>Последняя новость · 23.09.2026</h3><p>Нурлан Жакупов встретился с председателем корпорации Sunwah Group.</p><a href="https://sk.kz/press-center/news/?lang=ru" target="_blank">Пресс-центр</a></div><div class="sk-context-card"><h3>Цифровизация · 18.09.2026</h3><p>Как ИИ меняет работу нефтегазовой отрасли: корпоративные решения и эффект масштабирования.</p><a href="https://sk.kz/press-center/news/79436/?lang=ru" target="_blank">Подробнее</a></div></div>
-""", unsafe_allow_html=True)
-theme_overrides = "" if theme_label == "Светлая" else """
-.sk-nav {background: #111827; border-bottom-color: #334155; color: #e2e8f0;}
-.sk-brand, .sk-mark, .sk-links, .sk-tools {color: #e2e8f0;}
-.sk-links a, .sk-news a {color: #e2e8f0;}
-.sk-context {background: #334155; border-color: #334155;}
-.sk-context-card {background: #1e293b;}
-.sk-context-card h3, .sk-context-card p, .sk-context-card a {color: #e2e8f0;}
-.stApp [data-testid="stSidebar"] {background: #111827;}
-.stApp [data-testid="stSidebar"] h2, .stApp [data-testid="stSidebar"] h3, .stApp [data-testid="stSidebar"] p, .stApp [data-testid="stSidebar"] label {color: #e2e8f0;}
-.stApp [data-testid="stSidebar"] [data-testid="stCaptionContainer"] p {color: #94a3b8;}
-.stApp [data-testid="stSidebar"] hr {border-color: #334155;}
-.upload-card, .step-card {background: rgba(30,41,59,.72); border-color: #475569;}
-.empty-title, .step-card strong {color: #f8fafc;}
-.empty-subtitle, .step-card span {color: #cbd5e1;}
-[data-testid="stMetric"] {background: rgba(30,41,59,.72); border-color: #475569;}
-[data-testid="stMetricLabel"] {color: #cbd5e1;}
-[data-testid="stMetricValue"] {color: #f8fafc;}
-"""
-st.markdown(f"""
-<style>
-[data-testid="stAppViewContainer"], [data-testid="stHeader"] {{ background: {"#0f172a" if theme_label == "Тёмная" else "#f6f7f9"}; }}
-[data-testid="stAppViewContainer"] {{ color: {"#e5e7eb" if theme_label == "Тёмная" else "#1f2937"}; }}
-{theme_overrides}
-</style>
+<div class="hero"><div class="hero-copy"><div class="hero-quote">“</div><div class="eyebrow">AI MEETING INTELLIGENCE</div><h1>MeetingMind</h1><p>Автоматический протокол совещания: речь, саммари и поручения в одном месте.</p><div class="privacy">Локальная обработка · данные не покидают ваш компьютер</div></div></div>
 """, unsafe_allow_html=True)
 st.info("Внимание: ведётся запись и ИИ-транскрибация совещания. Участники должны быть уведомлены. Обработка данных происходит строго локально (On-Premise) без передачи во внешние облачные API.")
 
@@ -254,4 +208,3 @@ if result:
         with json_col:
             st.download_button("Скачать JSON", data=json.dumps(structured, ensure_ascii=False, indent=2), file_name="protocol.json", mime="application/json")
 
-st.markdown("<div style='text-align:center;color:#64748b;font-size:.75rem;margin-top:2.5rem;'>MeetingMind · локальный корпоративный прототип</div>", unsafe_allow_html=True)

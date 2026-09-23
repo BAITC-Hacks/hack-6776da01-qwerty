@@ -157,4 +157,3 @@ py -c "from app.transcription import transcribe_audio, segments_to_text; print(s
 
 Прототип для хакатона HackAlem AI. Перед промышленным внедрением потребуются тестовый набор записей, оценка качества распознавания, разграничение доступа и интеграция с корпоративной СЭД.
 
-Samruk-Kazyna <3
