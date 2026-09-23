@@ -84,8 +84,16 @@ if result:
 
     with transcript_tab:
         st.subheader("Полный транскрипт")
-        st.caption("Временные метки и локальные метки говорящих помогают быстро проверить результат.")
-        st.text_area("Текст совещания", transcript, height=480, label_visibility="collapsed")
+        st.caption("Можно исправить отдельные слова, после чего пересчитать поручения без повторной обработки аудио.")
+        edited_transcript = st.text_area("Текст совещания", transcript, height=480, key="transcript_editor", label_visibility="collapsed")
+        if st.button("🔄 Пересчитать поручения из исправленного текста"):
+            updated_tasks = extract_tasks(edited_transcript)
+            st.session_state["result"] = {
+                "transcript": edited_transcript,
+                "tasks": updated_tasks,
+                "summary": make_summary(edited_transcript, updated_tasks),
+            }
+            st.rerun()
 
     structured = {"summary": summary, "tasks": edited_tasks, "transcript": transcript, "speakers": speakers}
     with export_tab:
