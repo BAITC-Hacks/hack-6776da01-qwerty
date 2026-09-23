@@ -1,3 +1,7 @@
 streamlit>=1.38
-faster-whisper>=1.0.3
+faster-whisper>=1.1.0,<2.0.0
 python-docx>=1.1.2
+
+# Опционально для полноценной локальной диаризации.
+# Установка тяжёлая (PyTorch + модель) и не нужна для fallback по паузам:
+# pyannote.audio>=3.3.2,<4.0.0
