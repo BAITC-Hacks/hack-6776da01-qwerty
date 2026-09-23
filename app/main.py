@@ -13,7 +13,7 @@ from pdf_exporter import make_pdf
 from quality import validate_protocol
 from transcription import segments_to_text, transcribe_audio
 
-st.set_page_config(page_title="Samruk-Kazyna · MeetingMind", page_icon="🟦", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="Samruk-Kazyna · MeetingMind", layout="wide", initial_sidebar_state="expanded")
 st.markdown("""
 <style>
 .block-container {max-width: 1180px; padding-top: 0; padding-bottom: 3rem;}
@@ -57,7 +57,7 @@ body {background-color: #f5f3ef; background-image: radial-gradient(#ded8ce 1px, 
 [data-testid="stMetricValue"] {color: #f8fafc;}
 .stButton > button, .stDownloadButton > button {border-radius: 10px; font-weight: 650; min-height: 2.6rem;}
 </style>
-<div class="sk-nav"><div class="sk-brand"><div class="sk-mark">✦</div><div>SAMRUK<br><small>KAZYNA</small></div></div><div class="sk-links"><span>О Фонде</span><span>Инвесторам</span><span>Компании</span><span>Пресс-центр</span><span>Закупки</span></div><div class="sk-news">SK NEWS</div><div class="sk-tools">Рус⌄　⌕</div></div>
+<div class="sk-nav"><div class="sk-brand"><div class="sk-mark">SK</div><div>SAMRUK<br><small>KAZYNA</small></div></div><div class="sk-links"><span>О Фонде</span><span>Инвесторам</span><span>Компании</span><span>Пресс-центр</span><span>Закупки</span></div><div class="sk-news">SK NEWS</div><div class="sk-tools">Рус⌄　⌕</div></div>
 <div class="hero"><div class="hero-copy"><div class="hero-quote">“</div><div class="eyebrow">SAMRUK-KAZYNA GROUP · DIGITAL CONTROL</div><h1>MeetingMind: цифровой протокол совещаний</h1><p>Фиксируйте решения, поручения и сроки в едином корпоративном контуре — быстро, прозрачно и с контролем исполнения.</p><div class="privacy">Локальная обработка · данные не покидают ваш компьютер</div></div><div class="hero-visual"></div></div>
 <div class="sk-datebar"><div>01　Протокол</div><div>02　Транскрипт</div><div>03　Поручения</div><div>04　Контроль</div></div>
 <div class="sk-context"><div class="sk-context-card"><h3>Корпоративная повестка</h3><p>Цифровизация, эффективность и контроль исполнения решений — в едином локальном рабочем контуре.</p><a href="https://sk.kz/index.php?lang=ru" target="_blank">Официальный сайт фонда</a></div><div class="sk-context-card"><h3>Актуальная тема · 18.09.2026</h3><p>Как ИИ меняет работу нефтегазовой отрасли.</p><a href="https://sk.kz/press-center/news/?lang=ru" target="_blank">Пресс-центр</a></div><div class="sk-context-card"><h3>Актуальная тема · 15.09.2026</h3><p>Казахстанско-корейское деловое сотрудничество и цифровые проекты.</p><a href="https://sk.kz/press-center/news/?lang=ru" target="_blank">Последние новости</a></div></div>
@@ -158,7 +158,7 @@ if result:
     if ai_result:
         tasks = ai_result.get("tasks", [])
         summary = ai_result.get("summary", "")
-        st.success("🧠 Протокол дополнительно проанализирован локальной языковой моделью.")
+        st.success("Протокол дополнительно проанализирован локальной языковой моделью.")
     else:
         tasks = extract_tasks(transcript)
         summary = make_summary(transcript, tasks)
