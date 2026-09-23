@@ -13,20 +13,20 @@ from pdf_exporter import make_pdf
 from quality import validate_protocol
 from transcription import segments_to_text, transcribe_audio
 
-st.set_page_config(page_title="MeetingMind", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="Samruk-Kazyna · MeetingMind", page_icon="🟦", layout="wide", initial_sidebar_state="expanded")
 st.markdown("""
 <style>
 .block-container {max-width: 1180px; padding-top: 1.6rem; padding-bottom: 3rem;}
-.hero {position: relative; overflow: hidden; padding: 2rem 2.2rem; border-radius: 24px; background: radial-gradient(circle at 90% 15%, rgba(96,165,250,.42), transparent 32%), linear-gradient(135deg,#111827 0%,#172554 48%,#2563eb 100%); color: white; margin-bottom: 1.4rem; box-shadow: 0 18px 45px rgba(15,23,42,.28);}
-.hero h1 {margin: 0; font-size: 2.55rem; letter-spacing: -0.045em;}
+.hero {position: relative; overflow: hidden; padding: 2.1rem 2.3rem; border-radius: 6px; background: radial-gradient(circle at 92% 8%, rgba(73,153,218,.38), transparent 30%), linear-gradient(125deg,#062b59 0%,#07539a 58%,#0877bd 100%); color: white; margin-bottom: 1.4rem; box-shadow: 0 16px 36px rgba(6,43,89,.24);}
+.hero h1 {margin: 0; font-size: 2.45rem; letter-spacing: -0.035em; font-weight: 700;}
 .hero p {max-width: 650px; margin: .6rem 0 0; color: #dbeafe; font-size: 1.05rem; line-height: 1.55;}
-.eyebrow {font-size: .78rem; letter-spacing: .14em; text-transform: uppercase; color: #bfdbfe; font-weight: 700; margin-bottom: .65rem;}
-.privacy {display: inline-block; margin-top: 1.15rem; padding: .42rem .7rem; border: 1px solid rgba(191,219,254,.35); border-radius: 999px; color: #eff6ff; font-size: .82rem; background: rgba(15,23,42,.2);}
+.eyebrow {font-size: .76rem; letter-spacing: .16em; text-transform: uppercase; color: #d9efff; font-weight: 700; margin-bottom: .65rem;}
+.privacy {display: inline-block; margin-top: 1.15rem; padding: .42rem .7rem; border: 1px solid rgba(255,255,255,.34); border-radius: 3px; color: #eff6ff; font-size: .82rem; background: rgba(3,35,73,.22);}
 .upload-card {padding: 1.25rem 1.35rem .7rem; margin: 1rem 0 1.4rem; border: 1px solid rgba(148,163,184,.25); border-radius: 18px; background: rgba(30,41,59,.3);}
 .empty-title {font-size: 1.45rem; font-weight: 700; margin: .35rem 0 .25rem;}
 .empty-subtitle {color: #94a3b8; margin-bottom: 1.15rem;}
 .step-card {padding: 1rem; min-height: 105px; border: 1px solid rgba(148,163,184,.22); border-radius: 14px; background: rgba(30,41,59,.32);}
-.step-number {color: #93c5fd; font-size: .78rem; font-weight: 800; letter-spacing: .08em;}
+.step-number {color: #65b7e8; font-size: .78rem; font-weight: 800; letter-spacing: .08em;}
 .step-card strong {display: block; margin: .35rem 0; color: #f8fafc;}
 .step-card span {color: #94a3b8; font-size: .88rem;}
 [data-testid="stMetric"] {padding: 1rem 1.1rem; border: 1px solid rgba(148,163,184,.2); border-radius: 16px; background: rgba(30,41,59,.32);}
@@ -34,7 +34,7 @@ st.markdown("""
 [data-testid="stMetricValue"] {color: #f8fafc;}
 .stButton > button, .stDownloadButton > button {border-radius: 10px; font-weight: 650; min-height: 2.6rem;}
 </style>
-<div class="hero"><div class="eyebrow">AI meeting intelligence</div><h1>MeetingMind</h1><p>Автоматический протокол совещания: речь, саммари и поручения в одном месте.</p><div class="privacy">Локальная обработка · данные не покидают ваш компьютер</div></div>
+<div class="hero"><div class="eyebrow">SAMRUK-KAZYNA GROUP · DIGITAL CONTROL</div><h1>MeetingMind</h1><p>Цифровой протокол совещания для прозрачного контроля поручений, сроков и ответственных.</p><div class="privacy">Локальный корпоративный контур · данные не покидают ваш компьютер</div></div>
 """, unsafe_allow_html=True)
 st.info("Внимание: ведётся запись и ИИ-транскрибация совещания. Участники должны быть уведомлены. Обработка данных происходит строго локально (On-Premise) без передачи во внешние облачные API.")
 
@@ -70,8 +70,8 @@ def _overdue(deadline: str) -> bool:
 
 
 with st.sidebar:
-    st.markdown("## MeetingMind")
-    st.caption("Автопротоколирование совещаний")
+    st.markdown("## Samruk-Kazyna")
+    st.caption("MeetingMind · автопротоколирование совещаний")
     st.divider()
     st.subheader("Настройки")
     model_size = st.selectbox("Размер локальной модели", ["small", "medium"], index=0)
