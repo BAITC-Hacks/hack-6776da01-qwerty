@@ -76,9 +76,9 @@ def _rename_speakers(transcript: str, mapping: dict[str, str]) -> str:
     return transcript
 
 
-def _demo_split(transcript: str) -> str:
+def _demo_split(transcript: str, speaker_count: int = 2) -> str:
     lines = [line for line in transcript.splitlines() if line.strip()]
-    return "\n".join(re.sub(r"(\]\s*)[^:]+(?=:)", rf"\1SPEAKER_{index % 2:02d}", line) for index, line in enumerate(lines))
+    return "\n".join(re.sub(r"(\]\s*)[^:]+(?=:)", rf"\1SPEAKER_{index % speaker_count:02d}", line) for index, line in enumerate(lines))
 
 
 def _overdue(deadline: str) -> bool:
@@ -104,7 +104,9 @@ with st.sidebar:
     language_label = st.selectbox("Язык записи", ["Автоопределение", "Русский", "Казахский"], index=0, help="Для чисто русской записи выбор языка повышает качество распознавания.")
     language = {"Автоопределение": None, "Русский": "ru", "Казахский": "kk"}[language_label]
     smart_mode = st.checkbox("Умный локальный анализ", help="Использует Ollama на этом компьютере. Если Ollama недоступен, включится обычный анализатор.")
-    demo_mode = st.checkbox("Демо-режим: разделить диалог на 2 спикеров по паузам", help="Только визуальная демонстрация. Не является настоящей диаризацией.")
+    diarization_mode = st.selectbox("Разделение спикеров", ["Авто: pyannote + fallback", "Демо-разметка по очереди"], help="Авто-режим сам определяет число спикеров, если локальная pyannote-модель настроена.")
+    demo_mode = diarization_mode == "Демо-разметка по очереди"
+    demo_speaker_count = st.slider("Количество спикеров для демо", min_value=2, max_value=6, value=3, disabled=not demo_mode)
     st.divider()
     st.markdown("**Как это работает**")
     st.markdown("1. Уведомьте участников и загрузите запись\n2. Создайте протокол\n3. Назначьте имена и проверьте поручения\n4. Сформируйте уведомления и скачайте протокол")
@@ -133,10 +135,10 @@ if audio and st.button("Создать протокол", type="primary"):
         audio_path = temp.name
     try:
         with st.spinner("Распознаю аудио локально. Первый запуск скачает модель..."):
-            segments = transcribe_audio(audio_path, model_size, language=language)
+            segments = transcribe_audio(audio_path, model_size, language=language, diarization=True)
         raw_transcript = segments_to_text(segments)
         if demo_mode and len(_speakers(raw_transcript)) <= 1:
-            raw_transcript = _demo_split(raw_transcript)
+            raw_transcript = _demo_split(raw_transcript, demo_speaker_count)
         ai_result = analyze_locally(raw_transcript) if smart_mode else None
         st.session_state["result"] = {"raw_transcript": raw_transcript, "ai_result": ai_result}
     except Exception as exc:
@@ -170,7 +172,7 @@ if result:
     middle.metric("Поручений найдено", len(tasks))
     right.metric("Форматы экспорта", "DOCX · PDF · JSON")
     if len(raw_speakers) <= 1 and not demo_mode:
-        st.warning("Обнаружен только один спикер. Для демонстрации можно включить демо-режим, но он не заменяет настоящую диаризацию.")
+        st.warning("Автоматическая диаризация не нашла несколько голосов. Настройте локальную pyannote-модель или включите демо-разметку.")
     if demo_mode and len(raw_speakers) > 1:
         st.warning("Включён демо-режим разделения по очереди сегментов; результат нельзя считать акустической диаризацией.")
 
