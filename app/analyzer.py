@@ -8,7 +8,8 @@ import re
 _DEADLINE_RE = re.compile(
     r"(?:до|к|на|через)\s+(?:конца\s+недели|конца\s+месяца|пятницы|среды|"
     r"следующей\s+неделе|этой\s+неделе|две\s+недели|"
-    r"за\s+(?:\d+\s+)?недел\w*|не\s+больше\s+недел\w*|"
+    r"за\s+(?:\d+\s+)?недел\w*|за\s+месяц|не\s+больше\s+недел\w*|"
+    r"после\s+совещания|"
     r"\d{1,2}\s+(?:января|февраля|марта|апреля|мая|июня|июля|августа|"
     r"сентября|октября|ноября|декабря)|пятнадцатого\s+октября|"
     r"двадцатого\s+октября)", re.IGNORECASE)
@@ -20,6 +21,7 @@ _ACTION_RE = re.compile(
     r"\b(разработ\w*|провед\w*|подготов\w*|организ\w*|найд\w*|"
     r"провер\w*|соглас\w*|разбер\w*|предостав\w*|представ\w*|"
     r"зафиксир\w*|запрос\w*|пропиш\w*|обнов\w*|собер\w*|"
+    r"подготовлю|дам\s+смету|"
     r"выстав\w*|направ\w*|закро\w*|свяж\w*)\b", re.IGNORECASE)
 
 
@@ -57,7 +59,7 @@ def _owner_and_task(text: str, speaker: str) -> tuple[str, str]:
     return speaker, _clean_task(text)
 
 
-def extract_tasks(transcript: str) -> list[dict[str, str]]:
+def extract_tasks(transcript: str, speaker_names: dict[str, str] | None = None) -> list[dict[str, str]]:
     """Извлекает вероятные поручения и удаляет повторы."""
     tasks: list[dict[str, str]] = []
     seen: set[tuple[str, str]] = set()
@@ -70,6 +72,7 @@ def extract_tasks(transcript: str) -> list[dict[str, str]]:
         if not _ACTION_RE.search(text) or (not has_deadline and not has_explicit_owner):
             continue
         owner, task_text = _owner_and_task(text, speaker)
+        owner = (speaker_names or {}).get(owner, owner)
         if len(task_text) < 12:
             continue
         key = (re.sub(r"\W", "", task_text.lower()), owner.lower())
@@ -85,9 +88,20 @@ def make_summary(transcript: str, tasks: list[dict[str, str]]) -> str:
     if not lines:
         return "Текст совещания отсутствует."
     speakers = sorted({_text_and_speaker(line)[1] for line in lines})
-    return (
-        f"В совещании распознано {len(lines)} фрагментов речи. "
-        f"Участники: {', '.join(speakers[:5]) or 'не определены'}. "
-        f"Выделено поручений: {len(tasks)}. "
-        "Проверьте сроки и ответственных перед отправкой протокола."
-    )
+    task_lines = [f"- {item['task']} — {item['responsible']} ({item['deadline']})" for item in tasks[:5]]
+    return "\n".join([
+        "🎯 Основная тема совещания",
+        f"- Обсуждение рабочих вопросов и координация следующих шагов ({len(lines)} фрагментов речи).",
+        "",
+        "✅ Принятые решения",
+        *(task_lines[:3] or ["- Явные решения не выделены автоматически; требуется проверка транскрипта."]),
+        "",
+        "📌 Ключевые поручения",
+        *(task_lines or ["- Поручения не найдены; требуется ручная проверка транскрипта."]),
+        "",
+        "❓ Открытые вопросы и риски",
+        "- Проверьте спорные фрагменты, имена говорящих и поручения без срока.",
+        "",
+        "🚀 Следующие шаги",
+        f"- Проверить {len(tasks)} поручений, подтвердить ответственных и экспортировать протокол.",
+    ])

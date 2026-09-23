@@ -406,6 +406,10 @@ def _apply_name_hints(segments: list[Segment]) -> None:
 
 def _apply_voice_memory(audio_path: Path, segments: list[Segment]) -> bool:
     """Обучить профили по именованным репликам и распознать последующие."""
+    enabled = os.getenv("ENABLE_VOICE_PROFILES", "0").strip().lower() in {"1", "true", "yes", "on"}
+    if not enabled:
+        LOGGER.info("Память голосов отключена по умолчанию; для включения задайте ENABLE_VOICE_PROFILES=1")
+        return False
     encoder = _voice_encoder()
     if encoder is None:
         # Не подменяем voice embeddings грубыми спектральными признаками:
