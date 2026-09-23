@@ -14,7 +14,7 @@ from quality import validate_protocol
 from transcription import segments_to_text, transcribe_audio
 
 st.set_page_config(page_title="Samruk-Kazyna · MeetingMind", layout="wide", initial_sidebar_state="expanded")
-theme_label = st.sidebar.selectbox("Тема интерфейса", ["Светлая", "Тёмная"], index=0, key="interface_theme")
+theme_label = st.sidebar.selectbox("Тема интерфейса", ["Тёмная", "Светлая"], index=0, key="interface_theme")
 st.markdown("""
 <style>
 .block-container {max-width: 1180px; padding-top: 0; padding-bottom: 3rem;}
@@ -24,7 +24,8 @@ body {background: #0b1020;}
 .sk-mark {display: grid; place-items: center; width: 38px; height: 38px; border: 2px solid #b69b78; border-radius: 50%; color: #0d3767; font-size: 1.15rem;}
 .sk-brand small {display: block; font-size: .62rem; letter-spacing: .25em; color: #b69b78;}
 .sk-links {display: flex; gap: 1.35rem; flex: 1; font-size: .88rem;}
-.sk-links span {white-space: nowrap;}
+.sk-links a {white-space: nowrap; color: inherit; text-decoration: none;}
+.sk-links a:hover {text-decoration: underline;}
 .sk-news {font-weight: 800; font-size: 1.15rem; letter-spacing: .02em;}
 .sk-tools {font-size: .88rem; color: #8e765a; white-space: nowrap;}
 .hero {position: relative; overflow: hidden; min-height: 300px; background: radial-gradient(circle at 90% 15%, rgba(96,165,250,.42), transparent 32%), linear-gradient(135deg,#111827 0%,#172554 48%,#2563eb 100%); border-radius: 24px; color: white; margin-bottom: 1.5rem; box-shadow: 0 18px 45px rgba(15,23,42,.28);}
@@ -58,7 +59,7 @@ body {background: #0b1020;}
 [data-testid="stMetricValue"] {color: #f8fafc;}
 .stButton > button, .stDownloadButton > button {border-radius: 10px; font-weight: 650; min-height: 2.6rem;}
 </style>
-<div class="sk-nav"><div class="sk-brand"><div class="sk-mark">SK</div><div>SAMRUK<br><small>KAZYNA</small></div></div><div class="sk-links"><span>О Фонде</span><span>Инвесторам</span><span>Компании</span><span>Пресс-центр</span><span>Закупки</span></div><div class="sk-news">SK NEWS</div><div class="sk-tools">Рус⌄　⌕</div></div>
+<div class="sk-nav"><div class="sk-brand"><div class="sk-mark">SK</div><div>SAMRUK<br><small>KAZYNA</small></div></div><div class="sk-links"><a href="https://sk.kz/index.php?lang=ru" target="_blank" rel="noopener noreferrer">Официальный сайт</a><a href="https://sk.kz/press-center/news/?lang=ru" target="_blank" rel="noopener noreferrer">Пресс-центр</a></div><div class="sk-news"><a href="https://sk.kz/press-center/news/?lang=ru" target="_blank" rel="noopener noreferrer">SK NEWS</a></div><div class="sk-tools">Локальный контур</div></div>
 <div class="hero"><div class="hero-copy"><div class="hero-quote">“</div><div class="eyebrow">SAMRUK-KAZYNA GROUP · DIGITAL CONTROL</div><h1>MeetingMind: цифровой протокол совещаний</h1><p>Фиксируйте решения, поручения и сроки в едином корпоративном контуре — быстро, прозрачно и с контролем исполнения.</p><div class="privacy">Локальная обработка · данные не покидают ваш компьютер</div></div><div class="hero-visual"></div></div>
 <div class="sk-datebar"><div>01　Протокол</div><div>02　Транскрипт</div><div>03　Поручения</div><div>04　Контроль</div></div>
 <div class="sk-context"><div class="sk-context-card"><h3>Корпоративная повестка</h3><p>Цифровизация, эффективность и контроль исполнения решений — в едином локальном рабочем контуре.</p><a href="https://sk.kz/index.php?lang=ru" target="_blank">Официальный сайт фонда</a></div><div class="sk-context-card"><h3>Последняя новость · 23.09.2026</h3><p>Нурлан Жакупов встретился с председателем корпорации Sunwah Group.</p><a href="https://sk.kz/press-center/news/?lang=ru" target="_blank">Пресс-центр</a></div><div class="sk-context-card"><h3>Цифровизация · 18.09.2026</h3><p>Как ИИ меняет работу нефтегазовой отрасли: корпоративные решения и эффект масштабирования.</p><a href="https://sk.kz/press-center/news/79436/?lang=ru" target="_blank">Подробнее</a></div></div>
@@ -66,6 +67,7 @@ body {background: #0b1020;}
 theme_overrides = "" if theme_label == "Светлая" else """
 .sk-nav {background: #111827; border-bottom-color: #334155; color: #e2e8f0;}
 .sk-brand, .sk-mark, .sk-links, .sk-tools {color: #e2e8f0;}
+.sk-links a, .sk-news a {color: #e2e8f0;}
 .sk-context {background: #334155; border-color: #334155;}
 .sk-context-card {background: #1e293b;}
 .sk-context-card h3, .sk-context-card p, .sk-context-card a {color: #e2e8f0;}
@@ -252,4 +254,4 @@ if result:
         with json_col:
             st.download_button("Скачать JSON", data=json.dumps(structured, ensure_ascii=False, indent=2), file_name="protocol.json", mime="application/json")
 
-st.markdown("<div style='text-align:center;color:#64748b;font-size:.75rem;margin-top:2.5rem;'>Samruk-Kazyna &lt;3</div>", unsafe_allow_html=True)
+st.markdown("<div style='text-align:center;color:#64748b;font-size:.75rem;margin-top:2.5rem;'>MeetingMind · локальный корпоративный прототип</div>", unsafe_allow_html=True)
