@@ -1,3 +1,5 @@
+import json
+import re
 import tempfile
 from pathlib import Path
 
@@ -54,6 +56,9 @@ if result:
     left.metric("Фрагментов речи", len([x for x in transcript.splitlines() if x.strip()]))
     middle.metric("Поручений найдено", len(tasks))
     right.metric("Формат экспорта", "DOCX")
+    speakers = sorted(set(re.findall(r"\]\s*([^:]+):", transcript)))
+    if len(speakers) <= 1:
+        st.warning("Голоса пока не удалось надёжно разделить. Метки SPEAKER будут проверены вручную перед финальной отправкой.")
     st.markdown('<div class="section">', unsafe_allow_html=True)
     st.subheader("Саммари")
     st.write(summary)
@@ -71,4 +76,9 @@ if result:
     st.markdown('</div>', unsafe_allow_html=True)
     with st.expander("Показать полный транскрипт"):
         st.text(transcript)
-    st.download_button("⬇️ Скачать протокол DOCX", data=make_docx(transcript, summary, tasks), file_name="protocol.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", type="primary")
+    export_col, json_col = st.columns(2)
+    with export_col:
+        st.download_button("⬇️ Скачать протокол DOCX", data=make_docx(transcript, summary, tasks), file_name="protocol.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", type="primary")
+    with json_col:
+        structured = {"summary": summary, "tasks": tasks, "transcript": transcript, "speakers": speakers}
+        st.download_button("↗️ Скачать JSON для интеграции", data=json.dumps(structured, ensure_ascii=False, indent=2), file_name="protocol.json", mime="application/json")
