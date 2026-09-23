@@ -45,6 +45,104 @@ CHAIR_CUES = re.compile(
 )
 
 
+class VoiceMemory:
+    """Локальная долговременная память голосовых профилей."""
+
+    def __init__(self, path: Path):
+        self.path = path
+        self.profiles: dict[str, dict[str, Any]] = {}
+        if path.exists():
+            try:
+                import json
+
+                self.profiles = json.loads(path.read_text(encoding="utf-8"))
+            except Exception as exc:
+                LOGGER.warning("Не удалось прочитать память голосов: %s", exc)
+
+    @staticmethod
+    def _normalise(vector):
+        import numpy as np
+
+        vector = np.asarray(vector, dtype=np.float32)
+        norm = float(np.linalg.norm(vector))
+        return vector / norm if norm else vector
+
+    def enroll(self, name: str, vector) -> None:
+        import numpy as np
+
+        vector = self._normalise(vector)
+        old = self.profiles.get(name)
+        if old:
+            count = int(old.get("samples", 1))
+            vector = self._normalise((np.asarray(old["embedding"], dtype=np.float32) * count + vector) / (count + 1))
+            count += 1
+        else:
+            count = 1
+        self.profiles[name] = {"embedding": vector.tolist(), "samples": count}
+
+    def match(self, vector, threshold: float = 0.62) -> str | None:
+        import numpy as np
+
+        vector = self._normalise(vector)
+        candidates = []
+        for name, profile in self.profiles.items():
+            profile_vector = self._normalise(profile["embedding"])
+            candidates.append((float(np.dot(vector, profile_vector)), name))
+        if not candidates:
+            return None
+        score, name = max(candidates)
+        LOGGER.debug("Голос сравнен с %s: %.3f", name, score)
+        return name if score >= threshold else None
+
+    def save(self) -> None:
+        import json
+
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.path.write_text(json.dumps(self.profiles, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+@lru_cache(maxsize=1)
+def _voice_encoder():
+    """Загрузить локальный ECAPA encoder; модель скачивается только при первом запуске."""
+    try:
+        from speechbrain.inference.speaker import EncoderClassifier
+    except ImportError:
+        try:
+            from speechbrain.pretrained import EncoderClassifier
+        except ImportError:
+            LOGGER.info("SpeechBrain не установлен; память голосов отключена")
+            return None
+    try:
+        device = os.getenv("WHISPER_DEVICE", "cpu")
+        return EncoderClassifier.from_hparams(
+            source=os.getenv("VOICE_MODEL", "speechbrain/spkrec-ecapa-voxceleb"),
+            savedir=os.getenv("VOICE_MODEL_DIR", "models/voice-ecapa"),
+            run_opts={"device": device},
+        )
+    except Exception as exc:
+        LOGGER.warning("Не удалось загрузить модель памяти голосов: %s", exc)
+        return None
+
+
+def _voice_embedding(samples, start: float, end: float, encoder, sample_rate: int = 16000):
+    if encoder is None:
+        return None
+    try:
+        import numpy as np
+        import torch
+
+        clip = samples[int(start * sample_rate):int(end * sample_rate)]
+        if len(clip) < int(sample_rate * 1.2):
+            return None
+        waveform = torch.from_numpy(np.asarray(clip, dtype=np.float32)).unsqueeze(0)
+        with torch.no_grad():
+            embedding = encoder.encode_batch(waveform).squeeze().detach().cpu().numpy()
+        return VoiceMemory._normalise(embedding)
+    except Exception as exc:
+        LOGGER.debug("Не удалось получить voice embedding: %s", exc)
+        return None
+
+
 @dataclass
 class Segment:
     start: float
@@ -237,13 +335,50 @@ def _apply_name_hints(segments: list[Segment]) -> None:
         if is_response_request and found:
             pending_name = found[0]
             pending_turns = 2
-            if segment.speaker.startswith("SPEAKER_"):
+            if segment.speaker.startswith("SPEAKER_") or segment.speaker == "Участник":
                 segment.speaker = "Председатель"
 
         if pending_name and index + 1 < len(segments):
             if CHAIR_CUES.search(segments[index + 1].text):
                 pending_name = None
                 pending_turns = 0
+
+
+def _apply_voice_memory(audio_path: Path, segments: list[Segment]) -> bool:
+    """Обучить профили по именованным репликам и распознать последующие."""
+    encoder = _voice_encoder()
+    if encoder is None:
+        # Не подменяем voice embeddings грубыми спектральными признаками:
+        # это может ошибочно подписать все реплики одним человеком.
+        LOGGER.warning("Память голосов не активна: установите speechbrain")
+        return False
+    try:
+        samples = _audio_samples(audio_path)
+    except Exception as exc:
+        LOGGER.warning("Не удалось подготовить аудио для памяти голосов: %s", exc)
+        return False
+
+    memory = VoiceMemory(Path(os.getenv("VOICE_PROFILES_PATH", "data/voice_profiles.json")))
+    embeddings = [_voice_embedding(samples, item.start, item.end, encoder) for item in segments]
+    named = {item.speaker for item in segments if item.speaker not in {"SPEAKER_00", "SPEAKER_01", "Председатель"}}
+    enrolled = 0
+    for item, embedding in zip(segments, embeddings):
+        if embedding is not None and item.speaker in named:
+            memory.enroll(item.speaker, embedding)
+            enrolled += 1
+
+    matched = 0
+    for item, embedding in zip(segments, embeddings):
+        if embedding is None or item.speaker in named or item.speaker == "Председатель":
+            continue
+        name = memory.match(embedding)
+        if name:
+            item.speaker = name
+            matched += 1
+    if enrolled or matched:
+        memory.save()
+    LOGGER.info("Память голосов: профилей=%s, обучено=%s, сопоставлено=%s", len(memory.profiles), enrolled, matched)
+    return bool(memory.profiles)
 
 
 def transcribe_audio(
@@ -298,6 +433,7 @@ def transcribe_audio(
             segment.speaker = "SPEAKER_00"
         LOGGER.warning("Настоящая диаризация не активна; все реплики помечены SPEAKER_00")
     _apply_name_hints(segments)
+    _apply_voice_memory(path, segments)
     return segments
 
 
