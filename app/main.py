@@ -17,17 +17,30 @@ st.set_page_config(page_title="MeetingMind", page_icon="📝", layout="wide", in
 theme_label = st.sidebar.selectbox("Тема интерфейса", ["Тёмная", "Светлая"], index=0, key="interface_theme")
 st.markdown("""
 <style>
-.block-container {max-width: 860px; padding-top: 2rem; padding-bottom: 3rem;}
-body {background: #0b1020;}
-.hero {overflow: hidden; min-height: 112px; background: linear-gradient(118deg,#172b78 0%,#1d4ed8 55%,#2867e8 100%); border-radius: 0 0 14px 14px; color: white; margin-bottom: 1rem; box-shadow: 0 12px 28px rgba(15,23,42,.3);}
-.hero-copy {padding: 1.15rem 1.3rem 1.2rem;}
-.hero-quote {display: none;}
-.hero h1 {margin: 0; font-size: 1.7rem; line-height: 1.2; letter-spacing: -0.035em; font-weight: 750; color: #fff;}
-.hero p {margin: .65rem 0 0; color: #dbeafe; font-size: .84rem; line-height: 1.45;}
+.block-container {max-width: 1120px; padding-top: 1.8rem; padding-bottom: 4rem;}
+body {background: #070d18;}
+.topbar {display:flex; align-items:center; justify-content:space-between; margin-bottom:1.4rem; color:#94a3b8; font-size:.78rem; letter-spacing:.04em; text-transform:uppercase;}
+.brand {display:flex; align-items:center; gap:.7rem; color:#f8fafc; font-weight:800; letter-spacing:.12em;}
+.brand-mark {display:grid; place-items:center; width:34px; height:34px; border-radius:11px; background:linear-gradient(135deg,#38bdf8,#6366f1); color:white; font-size:.88rem; box-shadow:0 8px 22px rgba(56,189,248,.25);}
+.status-pill {display:inline-flex; align-items:center; gap:.45rem; padding:.42rem .7rem; border:1px solid rgba(148,163,184,.2); border-radius:999px; background:rgba(15,23,42,.72); color:#a7f3d0; text-transform:none; letter-spacing:0;}
+.status-dot {width:7px; height:7px; border-radius:50%; background:#34d399; box-shadow:0 0 0 4px rgba(52,211,153,.12);}
+.hero {display:grid; grid-template-columns:1.45fr .75fr; min-height:280px; overflow:hidden; background:linear-gradient(135deg,#101d3a 0%,#172554 52%,#263e9e 100%); border:1px solid rgba(129,140,248,.24); border-radius:26px; color:white; margin-bottom:1.25rem; box-shadow:0 22px 55px rgba(2,6,23,.38);}
+.hero-copy {padding:2.65rem 2.8rem; display:flex; flex-direction:column; justify-content:center;}
+.hero-quote {display:none;}
+.hero h1 {margin:0; max-width:650px; font-size:3rem; line-height:1.04; letter-spacing:-.055em; font-weight:800; color:#fff;}
+.hero p {max-width:590px; margin:1.1rem 0 0; color:#c7d2fe; font-size:1.05rem; line-height:1.6;}
+.hero-visual {position:relative; display:grid; place-items:center; overflow:hidden; background:radial-gradient(circle at 50% 45%,rgba(96,165,250,.45),transparent 25%),linear-gradient(145deg,rgba(30,64,175,.55),rgba(15,23,42,.15));}
+.hero-visual:before {content:""; position:absolute; width:210px; height:210px; border:1px solid rgba(165,180,252,.35); border-radius:50%; box-shadow:0 0 0 30px rgba(129,140,248,.08),0 0 0 62px rgba(56,189,248,.06);}
+.hero-visual:after {content:"AI"; position:relative; display:grid; place-items:center; width:108px; height:108px; border-radius:32px; transform:rotate(8deg); background:linear-gradient(145deg,#38bdf8,#6366f1); color:#fff; font-size:2.4rem; font-weight:800; letter-spacing:.08em; box-shadow:0 18px 40px rgba(56,189,248,.28);}
+.hero-meta {display:flex; gap:.65rem; margin-top:1.5rem; flex-wrap:wrap;}
+.hero-meta span {padding:.5rem .75rem; border:1px solid rgba(191,219,254,.22); border-radius:9px; background:rgba(15,23,42,.25); color:#dbeafe; font-size:.76rem;}
+.section-heading {display:flex; align-items:end; justify-content:space-between; margin:1.55rem 0 .7rem;}
+.section-heading h2 {margin:0; color:#f8fafc; font-size:1.25rem; letter-spacing:-.02em;}
+.section-heading span {color:#64748b; font-size:.78rem;}
 .section {margin-top: 1.2rem; padding: .25rem 0; border: 0; background: transparent;}
 .eyebrow {font-size: .76rem; letter-spacing: .16em; text-transform: uppercase; color: #d9efff; font-weight: 700; margin-bottom: .65rem;}
 .privacy {display: inline-block; margin-top: 1.15rem; padding: .42rem .7rem; border: 1px solid rgba(255,255,255,.34); border-radius: 3px; color: #eff6ff; font-size: .82rem; background: rgba(3,35,73,.22);}
-.upload-card {padding: 1.25rem 1.35rem .7rem; margin: 1rem 0 1.4rem; border: 1px solid rgba(148,163,184,.25); border-radius: 18px; background: rgba(30,41,59,.3);}
+.upload-card {padding:1.2rem 1.35rem .7rem; margin:0 0 1.4rem; border:1px solid rgba(148,163,184,.2); border-radius:18px; background:rgba(15,23,42,.72); box-shadow:0 12px 28px rgba(2,6,23,.18);}
 .empty-title {font-size: 1.45rem; font-weight: 700; margin: .35rem 0 .25rem;}
 .empty-subtitle {color: #94a3b8; margin-bottom: 1.15rem;}
 .step-card {padding: 1rem; min-height: 105px; border: 1px solid rgba(148,163,184,.22); border-radius: 14px; background: rgba(30,41,59,.32);}
@@ -39,9 +52,10 @@ body {background: #0b1020;}
 [data-testid="stMetricValue"] {color: #f8fafc;}
 .stButton > button, .stDownloadButton > button {border-radius: 10px; font-weight: 650; min-height: 2.6rem;}
 </style>
-<div class="hero"><div class="hero-copy"><div class="eyebrow">AI MEETING INTELLIGENCE</div><h1>MeetingMind</h1><p>Автоматический протокол совещания: речь, саммари и поручения в одном месте.</p></div></div>
+<div class="topbar"><div class="brand"><div class="brand-mark">M</div><span>MEETINGMIND</span></div><div class="status-pill"><i class="status-dot"></i> Локальный контур</div></div>
+<div class="hero"><div class="hero-copy"><div class="eyebrow">AI MEETING INTELLIGENCE</div><h1>Порядок после каждого разговора</h1><p>Превращайте запись совещания в понятный протокол с решениями, ответственными и сроками — без ручной расшифровки.</p><div class="hero-meta"><span>◉ Русский · Қазақша</span><span>▣ DOCX · PDF · JSON</span></div></div><div class="hero-visual"></div></div>
 """, unsafe_allow_html=True)
-st.caption("🔒 Локальная обработка: аудио и текст не отправляются во внешние облачные API.")
+st.caption("🔒 Аудио и текст обрабатываются локально и не отправляются во внешние облачные API.")
 if theme_label == "Светлая":
     st.markdown("""
     <style>
@@ -52,6 +66,10 @@ if theme_label == "Светлая":
     [data-testid="stSidebar"] p, [data-testid="stSidebar"] label { color: #1f2937; }
     [data-testid="stSidebar"] [data-testid="stCaptionContainer"] p { color: #64748b; }
     [data-testid="stSidebar"] hr { border-color: #cbd5e1; }
+    .topbar { color: #64748b; }
+    .brand { color: #172033; }
+    .status-pill { background: #ffffff; border-color: #dbe3ee; color: #047857; }
+    .section-heading h2 { color: #172033; }
     .upload-card, .step-card, [data-testid="stMetric"] { background: #ffffff; border-color: #dbe3ee; }
     .empty-title, .step-card strong { color: #172033; }
     .empty-subtitle, .step-card span, [data-testid="stMetricLabel"] { color: #64748b; }
@@ -111,6 +129,7 @@ with st.sidebar:
     st.markdown("**Как это работает**")
     st.markdown("1. Уведомьте участников и загрузите запись\n2. Создайте протокол\n3. Назначьте имена и проверьте поручения\n4. Сформируйте уведомления и скачайте протокол")
 
+st.markdown('<div class="section-heading"><h2>Новое совещание</h2><span>Шаг 01 · Загрузите аудиозапись</span></div>', unsafe_allow_html=True)
 st.markdown('<div class="upload-card">', unsafe_allow_html=True)
 st.markdown('<div class="empty-title">Загрузите запись совещания</div><div class="empty-subtitle">MP3, WAV, M4A или MP4 · обработка выполняется локально</div>', unsafe_allow_html=True)
 audio = st.file_uploader("Выберите аудиофайл", type=["mp3", "wav", "m4a", "mp4"], help="Поддерживаются MP3, WAV, M4A и MP4", label_visibility="collapsed")
