@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
@@ -24,6 +25,24 @@ from faster_whisper import WhisperModel
 
 
 LOGGER = logging.getLogger(__name__)
+
+NAME_PATTERNS = (
+    ("Асхат Ерланович", re.compile(r"\bАсхат\s+Ерланович\b", re.IGNORECASE)),
+    ("Гульмира Сериковна", re.compile(r"\bГульмира\s+Сер[ие]ковна\b", re.IGNORECASE)),
+    ("Тимур Булатович", re.compile(r"\bТимур\s+Б[ау]латович\b", re.IGNORECASE)),
+    ("Айнур Каировна", re.compile(r"\bАйнур\s+Каировна\b", re.IGNORECASE)),
+    ("Нурлан Сагатович", re.compile(r"\bНурлан\s+С[ао]гатович\b", re.IGNORECASE)),
+)
+RESPONSE_CUES = re.compile(
+    r"вам слово|что у вас|что предлагаете|как вы можете|ситуация такая же|"
+    r"когда последний|подскажите|можно добавить|а по обучению|у нас же",
+    re.IGNORECASE,
+)
+CHAIR_CUES = re.compile(
+    r"^\s*(понятно|согласен|согласна|так,|это недопустимо|хороший вопрос|"
+    r"отлично|фиксируем|значит так|переходим|подытожим|итого)",
+    re.IGNORECASE,
+)
 
 
 @dataclass
@@ -188,6 +207,45 @@ def _acoustic_speakers(audio_path: Path, segments: list[Segment]) -> bool:
         return False
 
 
+def _name_in_text(text: str) -> tuple[str, re.Match[str]] | None:
+    for canonical, pattern in NAME_PATTERNS:
+        match = pattern.search(text)
+        if match:
+            before = text[max(0, match.start() - 28):match.start()].lower()
+            if "ответственн" in before:
+                continue
+            return canonical, match
+    return None
+
+
+def _apply_name_hints(segments: list[Segment]) -> None:
+    """Привязывает ответную реплику к имени после прямого обращения."""
+    pending_name: str | None = None
+    pending_turns = 0
+    for index, segment in enumerate(segments):
+        text = segment.text
+        found = _name_in_text(text)
+        is_response_request = bool(found and RESPONSE_CUES.search(text))
+        is_chair_line = bool(CHAIR_CUES.search(text))
+
+        if pending_name and index > 0 and not is_chair_line:
+            segment.speaker = pending_name
+            pending_turns -= 1
+            if pending_turns <= 0:
+                pending_name = None
+
+        if is_response_request and found:
+            pending_name = found[0]
+            pending_turns = 2
+            if segment.speaker.startswith("SPEAKER_"):
+                segment.speaker = "Председатель"
+
+        if pending_name and index + 1 < len(segments):
+            if CHAIR_CUES.search(segments[index + 1].text):
+                pending_name = None
+                pending_turns = 0
+
+
 def transcribe_audio(
     audio_path: str | Path,
     model_size: str = "small",
@@ -239,6 +297,7 @@ def transcribe_audio(
         for segment in segments:
             segment.speaker = "SPEAKER_00"
         LOGGER.warning("Настоящая диаризация не активна; все реплики помечены SPEAKER_00")
+    _apply_name_hints(segments)
     return segments
 
 
