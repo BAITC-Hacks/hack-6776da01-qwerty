@@ -69,6 +69,10 @@ theme_overrides = "" if theme_label == "Светлая" else """
 .sk-context {background: #334155; border-color: #334155;}
 .sk-context-card {background: #1e293b;}
 .sk-context-card h3, .sk-context-card p, .sk-context-card a {color: #e2e8f0;}
+.stApp [data-testid="stSidebar"] {background: #111827;}
+.stApp [data-testid="stSidebar"] h2, .stApp [data-testid="stSidebar"] h3, .stApp [data-testid="stSidebar"] p, .stApp [data-testid="stSidebar"] label {color: #e2e8f0;}
+.stApp [data-testid="stSidebar"] [data-testid="stCaptionContainer"] p {color: #94a3b8;}
+.stApp [data-testid="stSidebar"] hr {border-color: #334155;}
 .upload-card, .step-card {background: rgba(30,41,59,.72); border-color: #475569;}
 .empty-title, .step-card strong {color: #f8fafc;}
 .empty-subtitle, .step-card span {color: #cbd5e1;}
