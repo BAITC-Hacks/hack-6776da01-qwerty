@@ -100,13 +100,17 @@ with st.sidebar:
     st.caption("Автопротоколирование совещаний")
     st.divider()
     st.subheader("Настройки")
-    model_size = st.selectbox("Размер локальной модели", ["small", "medium"], index=0)
+    model_size = st.selectbox("Размер локальной модели", ["small", "medium", "large-v3-turbo"], index=0)
     language_label = st.selectbox("Язык записи", ["Автоопределение", "Русский", "Казахский"], index=0, help="Для чисто русской записи выбор языка повышает качество распознавания.")
     language = {"Автоопределение": None, "Русский": "ru", "Казахский": "kk"}[language_label]
     smart_mode = st.checkbox("Умный локальный анализ", help="Использует Ollama на этом компьютере. Если Ollama недоступен, включится обычный анализатор.")
     diarization_mode = st.selectbox("Разделение спикеров", ["Авто: pyannote + fallback", "Демо-разметка по очереди"], help="Авто-режим сам определяет число спикеров, если локальная pyannote-модель настроена.")
     demo_mode = diarization_mode == "Демо-разметка по очереди"
     demo_speaker_count = st.slider("Количество спикеров для демо", min_value=2, max_value=6, value=3, disabled=not demo_mode)
+    if model_size == "medium":
+        st.caption("Medium точнее только при достаточных ресурсах; на CPU может быть медленнее small.")
+    elif model_size == "large-v3-turbo":
+        st.caption("Рекомендуется для GPU. На CPU эта модель будет очень медленной.")
     st.divider()
     st.markdown("**Как это работает**")
     st.markdown("1. Уведомьте участников и загрузите запись\n2. Создайте протокол\n3. Назначьте имена и проверьте поручения\n4. Сформируйте уведомления и скачайте протокол")
