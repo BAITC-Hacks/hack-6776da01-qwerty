@@ -14,6 +14,7 @@ from quality import validate_protocol
 from transcription import segments_to_text, transcribe_audio
 
 st.set_page_config(page_title="MeetingMind", page_icon="📝", layout="wide", initial_sidebar_state="expanded")
+theme_label = st.sidebar.selectbox("Тема интерфейса", ["Тёмная", "Светлая"], index=0, key="interface_theme")
 st.markdown("""
 <style>
 .block-container {max-width: 1180px; padding-top: 0; padding-bottom: 3rem;}
@@ -43,6 +44,22 @@ body {background: #0b1020;}
 </style>
 <div class="hero"><div class="hero-copy"><div class="hero-quote">“</div><div class="eyebrow">AI MEETING INTELLIGENCE</div><h1>MeetingMind</h1><p>Автоматический протокол совещания: речь, саммари и поручения в одном месте.</p><div class="privacy">Локальная обработка · данные не покидают ваш компьютер</div></div></div>
 """, unsafe_allow_html=True)
+if theme_label == "Светлая":
+    st.markdown("""
+    <style>
+    [data-testid="stAppViewContainer"], [data-testid="stHeader"] { background: #f6f7f9; }
+    [data-testid="stAppViewContainer"] { color: #1f2937; }
+    [data-testid="stSidebar"] { background: #eef2f7; }
+    [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3,
+    [data-testid="stSidebar"] p, [data-testid="stSidebar"] label { color: #1f2937; }
+    [data-testid="stSidebar"] [data-testid="stCaptionContainer"] p { color: #64748b; }
+    [data-testid="stSidebar"] hr { border-color: #cbd5e1; }
+    .upload-card, .step-card, [data-testid="stMetric"] { background: #ffffff; border-color: #dbe3ee; }
+    .empty-title, .step-card strong { color: #172033; }
+    .empty-subtitle, .step-card span, [data-testid="stMetricLabel"] { color: #64748b; }
+    [data-testid="stMetricValue"] { color: #172033; }
+    </style>
+    """, unsafe_allow_html=True)
 st.info("Внимание: ведётся запись и ИИ-транскрибация совещания. Участники должны быть уведомлены. Обработка данных происходит строго локально (On-Premise) без передачи во внешние облачные API.")
 
 
