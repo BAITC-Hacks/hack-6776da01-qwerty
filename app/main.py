@@ -17,16 +17,13 @@ st.set_page_config(page_title="MeetingMind", page_icon="📝", layout="wide", in
 theme_label = st.sidebar.selectbox("Тема интерфейса", ["Тёмная", "Светлая"], index=0, key="interface_theme")
 st.markdown("""
 <style>
-.block-container {max-width: 1180px; padding-top: 0; padding-bottom: 3rem;}
+.block-container {max-width: 860px; padding-top: 2rem; padding-bottom: 3rem;}
 body {background: #0b1020;}
-.hero {position: relative; overflow: hidden; min-height: 300px; background: radial-gradient(circle at 90% 15%, rgba(96,165,250,.42), transparent 32%), linear-gradient(135deg,#111827 0%,#172554 48%,#2563eb 100%); border-radius: 24px; color: white; margin-bottom: 1.5rem; box-shadow: 0 18px 45px rgba(15,23,42,.28);}
-.hero-copy {padding: 3rem 3.5rem 2.7rem; display: flex; flex-direction: column; justify-content: center;}
-.hero-quote {color: #b69b78; font-size: 3.2rem; line-height: .7; margin-bottom: 1.4rem;}
-.hero h1 {margin: 0; max-width: 680px; font-size: 2.55rem; line-height: 1.18; letter-spacing: -0.035em; font-weight: 700; color: #fff;}
-.hero p {max-width: 680px; margin: 1.2rem 0 0; color: #dbeafe; font-size: 1.05rem; line-height: 1.65;}
-.hero-visual {position: relative; display: grid; place-items: center; overflow: hidden; background: linear-gradient(145deg, #d8e7ef 0%, #edf1ed 48%, #cbb99f 100%);}
-.hero-visual:before {content: ""; position: absolute; inset: 12% 10%; border: 1px solid rgba(13,55,103,.22); border-radius: 50%; box-shadow: 0 0 0 28px rgba(255,255,255,.26), 0 0 0 58px rgba(13,55,103,.08);}
-.hero-visual:after {content: "AI"; position: relative; display: grid; place-items: center; width: 148px; height: 148px; border-radius: 50%; background: #0d3767; color: #fff; font-size: 3.2rem; font-weight: 700; letter-spacing: .08em; box-shadow: 12px 18px 32px rgba(13,55,103,.25);}
+.hero {overflow: hidden; min-height: 112px; background: linear-gradient(118deg,#172b78 0%,#1d4ed8 55%,#2867e8 100%); border-radius: 0 0 14px 14px; color: white; margin-bottom: 1rem; box-shadow: 0 12px 28px rgba(15,23,42,.3);}
+.hero-copy {padding: 1.15rem 1.3rem 1.2rem;}
+.hero-quote {display: none;}
+.hero h1 {margin: 0; font-size: 1.7rem; line-height: 1.2; letter-spacing: -0.035em; font-weight: 750; color: #fff;}
+.hero p {margin: .65rem 0 0; color: #dbeafe; font-size: .84rem; line-height: 1.45;}
 .section {margin-top: 1.2rem; padding: .25rem 0; border: 0; background: transparent;}
 .eyebrow {font-size: .76rem; letter-spacing: .16em; text-transform: uppercase; color: #d9efff; font-weight: 700; margin-bottom: .65rem;}
 .privacy {display: inline-block; margin-top: 1.15rem; padding: .42rem .7rem; border: 1px solid rgba(255,255,255,.34); border-radius: 3px; color: #eff6ff; font-size: .82rem; background: rgba(3,35,73,.22);}
@@ -42,8 +39,9 @@ body {background: #0b1020;}
 [data-testid="stMetricValue"] {color: #f8fafc;}
 .stButton > button, .stDownloadButton > button {border-radius: 10px; font-weight: 650; min-height: 2.6rem;}
 </style>
-<div class="hero"><div class="hero-copy"><div class="hero-quote">“</div><div class="eyebrow">AI MEETING INTELLIGENCE</div><h1>MeetingMind</h1><p>Автоматический протокол совещания: речь, саммари и поручения в одном месте.</p><div class="privacy">Локальная обработка · данные не покидают ваш компьютер</div></div></div>
+<div class="hero"><div class="hero-copy"><div class="eyebrow">AI MEETING INTELLIGENCE</div><h1>MeetingMind</h1><p>Автоматический протокол совещания: речь, саммари и поручения в одном месте.</p></div></div>
 """, unsafe_allow_html=True)
+st.caption("🔒 Локальная обработка: аудио и текст не отправляются во внешние облачные API.")
 if theme_label == "Светлая":
     st.markdown("""
     <style>
@@ -121,13 +119,6 @@ consent = st.checkbox("Участники уведомлены о записи �
 if audio:
     st.audio(audio)
     st.info(f"Файл готов к обработке: **{audio.name}** · {audio.size / 1024 / 1024:.1f} МБ")
-elif not st.session_state.get("result"):
-    st.markdown("<div class='empty-title'>От аудио к готовому протоколу</div><div class='empty-subtitle'>Три шага до результата</div>", unsafe_allow_html=True)
-    c1, c2, c3 = st.columns(3)
-    for col, number, title, text in [(c1, "01", "Загрузите запись", "MP3, WAV, M4A или MP4"), (c2, "02", "Проверьте результат", "Транскрипт, саммари и поручения"), (c3, "03", "Скачайте протокол", "DOCX, PDF или JSON")]:
-        with col:
-            st.markdown(f"<div class='step-card'><div class='step-number'>{number}</div><strong>{title}</strong><span>{text}</span></div>", unsafe_allow_html=True)
-
 if audio and st.button("Создать протокол", type="primary"):
     if not consent:
         st.error("Подтвердите, что участники уведомлены о записи.")
