@@ -18,7 +18,7 @@ st.markdown("""
 .hero {padding: 1.4rem 1.6rem; border-radius: 18px; background: linear-gradient(135deg,#172554 0%,#1e3a8a 55%,#2563eb 100%); color: white; margin-bottom: 1.2rem;}
 .hero h1 {margin: 0; font-size: 2.35rem; letter-spacing: -0.03em;}
 .hero p {margin: .45rem 0 0; color: #dbeafe; font-size: 1.02rem;}
-.section {margin-top: 1.2rem; padding: 1rem 1.2rem; border: 1px solid #e5e7eb; border-radius: 14px; background: #ffffff;}
+.section {margin-top: 1.2rem; padding: .25rem 0; border: 0; background: transparent;}
 </style>
 <div class="hero"><h1>MeetingMind</h1><p>Автоматический протокол совещания: речь, саммари и поручения в одном месте.</p></div>
 """, unsafe_allow_html=True)
