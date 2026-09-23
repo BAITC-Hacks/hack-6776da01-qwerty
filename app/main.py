@@ -37,6 +37,11 @@ body {background-color: #f5f3ef; background-image: radial-gradient(#ded8ce 1px, 
 .sk-datebar {display: grid; grid-template-columns: repeat(4, 1fr); margin: -1.5rem 0 1.8rem; position: relative;}
 .sk-datebar div {padding: 1rem; text-align: center; color: #fff; background: #b7a58e; border-right: 1px solid rgba(255,255,255,.35);}
 .sk-datebar div:first-child {background: #263d65;}
+.sk-context {display:grid; grid-template-columns:1.15fr 1fr 1fr; gap:1px; margin:1rem 0 1.5rem; background:#d9d0c2; border:1px solid #d9d0c2;}
+.sk-context-card {padding:1.2rem 1.3rem; background:#fff; min-height:115px;}
+.sk-context-card h3 {margin:0 0 .55rem; color:#0d3767; font-size:1rem; font-weight:650;}
+.sk-context-card p {margin:0; color:#667085; font-size:.86rem; line-height:1.45;}
+.sk-context-card a {display:inline-block; margin-top:.65rem; color:#0d3767; font-size:.78rem; text-decoration:none; font-weight:650;}
 .section {margin-top: 1.2rem; padding: .25rem 0; border: 0; background: transparent;}
 .eyebrow {font-size: .76rem; letter-spacing: .16em; text-transform: uppercase; color: #d9efff; font-weight: 700; margin-bottom: .65rem;}
 .privacy {display: inline-block; margin-top: 1.15rem; padding: .42rem .7rem; border: 1px solid rgba(255,255,255,.34); border-radius: 3px; color: #eff6ff; font-size: .82rem; background: rgba(3,35,73,.22);}
@@ -55,6 +60,7 @@ body {background-color: #f5f3ef; background-image: radial-gradient(#ded8ce 1px, 
 <div class="sk-nav"><div class="sk-brand"><div class="sk-mark">✦</div><div>SAMRUK<br><small>KAZYNA</small></div></div><div class="sk-links"><span>О Фонде</span><span>Инвесторам</span><span>Компании</span><span>Пресс-центр</span><span>Закупки</span></div><div class="sk-news">SK NEWS</div><div class="sk-tools">Рус⌄　⌕</div></div>
 <div class="hero"><div class="hero-copy"><div class="hero-quote">“</div><div class="eyebrow">SAMRUK-KAZYNA GROUP · DIGITAL CONTROL</div><h1>MeetingMind: цифровой протокол совещаний</h1><p>Фиксируйте решения, поручения и сроки в едином корпоративном контуре — быстро, прозрачно и с контролем исполнения.</p><div class="privacy">Локальная обработка · данные не покидают ваш компьютер</div></div><div class="hero-visual"></div></div>
 <div class="sk-datebar"><div>01　Протокол</div><div>02　Транскрипт</div><div>03　Поручения</div><div>04　Контроль</div></div>
+<div class="sk-context"><div class="sk-context-card"><h3>Корпоративная повестка</h3><p>Цифровизация, эффективность и контроль исполнения решений — в едином локальном рабочем контуре.</p><a href="https://sk.kz/index.php?lang=ru" target="_blank">Официальный сайт фонда</a></div><div class="sk-context-card"><h3>Актуальная тема · 18.09.2026</h3><p>Как ИИ меняет работу нефтегазовой отрасли.</p><a href="https://sk.kz/press-center/news/?lang=ru" target="_blank">Пресс-центр</a></div><div class="sk-context-card"><h3>Актуальная тема · 15.09.2026</h3><p>Казахстанско-корейское деловое сотрудничество и цифровые проекты.</p><a href="https://sk.kz/press-center/news/?lang=ru" target="_blank">Последние новости</a></div></div>
 """, unsafe_allow_html=True)
 st.info("Внимание: ведётся запись и ИИ-транскрибация совещания. Участники должны быть уведомлены. Обработка данных происходит строго локально (On-Premise) без передачи во внешние облачные API.")
 
@@ -97,8 +103,8 @@ with st.sidebar:
     model_size = st.selectbox("Размер локальной модели", ["small", "medium"], index=0)
     language_label = st.selectbox("Язык записи", ["Автоопределение", "Русский", "Казахский"], index=0, help="Для чисто русской записи выбор языка повышает качество распознавания.")
     language = {"Автоопределение": None, "Русский": "ru", "Казахский": "kk"}[language_label]
-    smart_mode = st.checkbox("🧠 Умный локальный анализ", help="Использует Ollama на этом компьютере. Если Ollama недоступен, включится обычный анализатор.")
-    demo_mode = st.checkbox("🎭 Демо-режим: разделить диалог на 2 спикеров по паузам", help="Только визуальная демонстрация. Не является настоящей диаризацией.")
+    smart_mode = st.checkbox("Умный локальный анализ", help="Использует Ollama на этом компьютере. Если Ollama недоступен, включится обычный анализатор.")
+    demo_mode = st.checkbox("Демо-режим: разделить диалог на 2 спикеров по паузам", help="Только визуальная демонстрация. Не является настоящей диаризацией.")
     st.divider()
     st.markdown("**Как это работает**")
     st.markdown("1. Уведомьте участников и загрузите запись\n2. Создайте протокол\n3. Назначьте имена и проверьте поручения\n4. Сформируйте уведомления и скачайте протокол")
