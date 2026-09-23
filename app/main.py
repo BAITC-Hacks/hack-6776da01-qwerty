@@ -96,7 +96,7 @@ def _overdue(deadline: str) -> bool:
 
 
 with st.sidebar:
-    st.markdown("## 📝 MeetingMind")
+    st.markdown("## MeetingMind")
     st.caption("Автопротоколирование совещаний")
     st.divider()
     st.subheader("Настройки")
