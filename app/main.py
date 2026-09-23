@@ -7,6 +7,7 @@ import streamlit as st
 
 from analyzer import extract_tasks, make_summary
 from exporter import make_docx
+from pdf_exporter import make_pdf
 from transcription import segments_to_text, transcribe_audio
 
 
@@ -90,8 +91,10 @@ if result:
     with export_tab:
         st.subheader("Скачать результат")
         st.write("DOCX удобно отправить коллегам, JSON — передать в СЭД, CRM или будущий дашборд.")
-        export_col, json_col = st.columns(2)
+        export_col, pdf_col, json_col = st.columns(3)
         with export_col:
             st.download_button("⬇️ Скачать протокол DOCX", data=make_docx(transcript, summary, edited_tasks), file_name="protocol.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", type="primary")
+        with pdf_col:
+            st.download_button("📄 Скачать PDF", data=make_pdf(transcript, summary, edited_tasks), file_name="protocol.pdf", mime="application/pdf")
         with json_col:
             st.download_button("↗️ Скачать JSON для интеграции", data=json.dumps(structured, ensure_ascii=False, indent=2), file_name="protocol.json", mime="application/json")
