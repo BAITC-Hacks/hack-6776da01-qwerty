@@ -8,6 +8,7 @@ import streamlit as st
 
 from analyzer import extract_tasks, make_summary
 from exporter import make_docx
+from local_llm import analyze_locally
 from pdf_exporter import make_pdf
 from quality import validate_protocol
 from transcription import segments_to_text, transcribe_audio
@@ -74,7 +75,8 @@ with st.sidebar:
     st.divider()
     st.subheader("Настройки")
     model_size = st.selectbox("Размер локальной модели", ["small", "medium"], index=0)
-    demo_mode = st.checkbox("Демо-режим: разделить диалог на 2 спикеров по паузам", help="Только визуальная демонстрация. Не является настоящей диаризацией.")
+    smart_mode = st.checkbox("🧠 Умный локальный анализ", help="Использует Ollama на этом компьютере. Если Ollama недоступен, включится обычный анализатор.")
+    demo_mode = st.checkbox("🎭 Демо-режим: разделить диалог на 2 спикеров по паузам", help="Только визуальная демонстрация. Не является настоящей диаризацией.")
     st.divider()
     st.markdown("**Как это работает**")
     st.markdown("1. Уведомьте участников и загрузите запись\n2. Создайте протокол\n3. Назначьте имена и проверьте поручения\n4. Сформируйте уведомления и скачайте протокол")
@@ -107,7 +109,8 @@ if audio and st.button("Создать протокол", type="primary"):
         raw_transcript = segments_to_text(segments)
         if demo_mode and len(_speakers(raw_transcript)) <= 1:
             raw_transcript = _demo_split(raw_transcript)
-        st.session_state["result"] = {"raw_transcript": raw_transcript}
+        ai_result = analyze_locally(raw_transcript) if smart_mode else None
+        st.session_state["result"] = {"raw_transcript": raw_transcript, "ai_result": ai_result}
     except Exception as exc:
         st.error(f"Не удалось обработать запись: {exc}")
     finally:
@@ -123,8 +126,14 @@ if result:
         mapping = {speaker: st.text_input(speaker, key=f"mapping_{speaker}", placeholder="Например: Ахметова Айжан") for speaker in raw_speakers}
 
     transcript = _rename_speakers(raw_transcript, mapping)
-    tasks = extract_tasks(transcript)
-    summary = make_summary(transcript, tasks)
+    ai_result = result.get("ai_result")
+    if ai_result:
+        tasks = ai_result.get("tasks", [])
+        summary = ai_result.get("summary", "")
+        st.success("🧠 Протокол дополнительно проанализирован локальной языковой моделью.")
+    else:
+        tasks = extract_tasks(transcript)
+        summary = make_summary(transcript, tasks)
     quality = validate_protocol(transcript, tasks, summary)
     speakers = _speakers(transcript)
     st.success("Протокол сформирован. Проверьте имена, сроки и поручения перед отправкой коллегам.")
@@ -169,8 +178,8 @@ if result:
     with transcript_tab:
         st.subheader("Полный транскрипт с именами")
         edited_transcript = st.text_area("Текст совещания", transcript, height=480, label_visibility="collapsed")
-        if st.button("Пересчитать поручения из исправленного текста"):
-            st.session_state["result"] = {"raw_transcript": edited_transcript}
+        if st.button("🔄 Пересчитать поручения из исправленного текста"):
+            st.session_state["result"] = {"raw_transcript": edited_transcript, "ai_result": analyze_locally(edited_transcript) if smart_mode else None}
             st.rerun()
 
     structured = {"summary": summary, "tasks": edited_tasks, "transcript": transcript, "speakers": speakers, "quality": quality}
