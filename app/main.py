@@ -26,7 +26,12 @@ st.caption("🔒 Локальная обработка: аудио и текст
 
 with st.sidebar:
     st.subheader("Настройки")
-    model_size = st.selectbox("Размер локальной модели", ["small", "medium"], index=0)
+    model_size = st.selectbox("Размер локальной модели", ["small", "medium", "large-v3-turbo"], index=0)
+    language = st.selectbox("Язык речи", ["auto", "ru", "kk"], index=0, help="Для смешанной речи оставьте auto.")
+    if model_size == "medium":
+        st.caption("Medium точнее только при достаточных ресурсах; на CPU может быть медленнее small.")
+    elif model_size == "large-v3-turbo":
+        st.caption("Рекомендуется для GPU. На CPU эта модель будет очень медленной.")
     st.divider()
     st.markdown("**Как это работает**")
     st.markdown("1. Загрузите запись\n2. Нажмите «Создать протокол»\n3. Проверьте поручения\n4. Скачайте DOCX")
@@ -41,7 +46,7 @@ if audio and st.button("Создать протокол", type="primary"):
         temp.write(audio.getbuffer())
         audio_path = temp.name
     with st.spinner("Распознаю аудио локально. Первый запуск скачает модель..."):
-        segments = transcribe_audio(audio_path, model_size)
+        segments = transcribe_audio(audio_path, model_size, language=None if language == "auto" else language)
     transcript = segments_to_text(segments)
     tasks = extract_tasks(transcript)
     summary = make_summary(transcript, tasks)
