@@ -14,6 +14,7 @@ from quality import validate_protocol
 from transcription import segments_to_text, transcribe_audio
 
 st.set_page_config(page_title="Samruk-Kazyna · MeetingMind", layout="wide", initial_sidebar_state="expanded")
+theme_label = st.sidebar.selectbox("Тема интерфейса", ["Светлая", "Тёмная"], index=0, key="interface_theme")
 st.markdown("""
 <style>
 .block-container {max-width: 1180px; padding-top: 0; padding-bottom: 3rem;}
@@ -61,6 +62,26 @@ body {background: #0b1020;}
 <div class="hero"><div class="hero-copy"><div class="hero-quote">“</div><div class="eyebrow">SAMRUK-KAZYNA GROUP · DIGITAL CONTROL</div><h1>MeetingMind: цифровой протокол совещаний</h1><p>Фиксируйте решения, поручения и сроки в едином корпоративном контуре — быстро, прозрачно и с контролем исполнения.</p><div class="privacy">Локальная обработка · данные не покидают ваш компьютер</div></div><div class="hero-visual"></div></div>
 <div class="sk-datebar"><div>01　Протокол</div><div>02　Транскрипт</div><div>03　Поручения</div><div>04　Контроль</div></div>
 <div class="sk-context"><div class="sk-context-card"><h3>Корпоративная повестка</h3><p>Цифровизация, эффективность и контроль исполнения решений — в едином локальном рабочем контуре.</p><a href="https://sk.kz/index.php?lang=ru" target="_blank">Официальный сайт фонда</a></div><div class="sk-context-card"><h3>Последняя новость · 23.09.2026</h3><p>Нурлан Жакупов встретился с председателем корпорации Sunwah Group.</p><a href="https://sk.kz/press-center/news/?lang=ru" target="_blank">Пресс-центр</a></div><div class="sk-context-card"><h3>Цифровизация · 18.09.2026</h3><p>Как ИИ меняет работу нефтегазовой отрасли: корпоративные решения и эффект масштабирования.</p><a href="https://sk.kz/press-center/news/79436/?lang=ru" target="_blank">Подробнее</a></div></div>
+""", unsafe_allow_html=True)
+theme_overrides = "" if theme_label == "Светлая" else """
+.sk-nav {background: #111827; border-bottom-color: #334155; color: #e2e8f0;}
+.sk-brand, .sk-mark, .sk-links, .sk-tools {color: #e2e8f0;}
+.sk-context {background: #334155; border-color: #334155;}
+.sk-context-card {background: #1e293b;}
+.sk-context-card h3, .sk-context-card p, .sk-context-card a {color: #e2e8f0;}
+.upload-card, .step-card {background: rgba(30,41,59,.72); border-color: #475569;}
+.empty-title, .step-card strong {color: #f8fafc;}
+.empty-subtitle, .step-card span {color: #cbd5e1;}
+[data-testid="stMetric"] {background: rgba(30,41,59,.72); border-color: #475569;}
+[data-testid="stMetricLabel"] {color: #cbd5e1;}
+[data-testid="stMetricValue"] {color: #f8fafc;}
+"""
+st.markdown(f"""
+<style>
+[data-testid="stAppViewContainer"], [data-testid="stHeader"] {{ background: {"#0f172a" if theme_label == "Тёмная" else "#f6f7f9"}; }}
+[data-testid="stAppViewContainer"] {{ color: {"#e5e7eb" if theme_label == "Тёмная" else "#1f2937"}; }}
+{theme_overrides}
+</style>
 """, unsafe_allow_html=True)
 st.info("Внимание: ведётся запись и ИИ-транскрибация совещания. Участники должны быть уведомлены. Обработка данных происходит строго локально (On-Premise) без передачи во внешние облачные API.")
 
